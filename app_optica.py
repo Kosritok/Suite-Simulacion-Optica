@@ -1,233 +1,266 @@
 import customtkinter as ctk
-import math
 from tkinter import messagebox
 
-# ==========================================
-# MOTOR MATEMÁTICO COMPLETO
-# ==========================================
-class MotorCalculoOptico:
-    @staticmethod
-    def calcular_atenuacion_db_km(p_in: float, p_out: float, z: float) -> float:
-        if p_in <= 0 or p_out <= 0 or z <= 0:
-            raise ValueError("Las potencias y la distancia deben ser > 0.")
-        return (10 / z) * math.log10(p_in / p_out)
+# Importamos los dos motores matemáticos
+from motor_optico import MotorCalculoOptico
+from motor_modulo_a import MotorModuloA
 
-    @staticmethod
-    def eficiencia_acoplamiento(rs: float, a: float, na: float) -> float:
-        if rs <= 0 or a <= 0 or na <= 0:
-            raise ValueError("Los radios y la apertura numérica deben ser > 0.")
-        if rs <= a:
-            return na ** 2
-        else:
-            return ((a / rs) ** 2) * (na ** 2)
-
-    @staticmethod
-    def margen_potencia(p_tx_dbm: float, sens_rx_dbm: float, atenuacion_cable_db: float, 
-                        perdidas_empalmes_db: float, perdidas_conectores_db: float) -> float:
-        perdida_permitida = p_tx_dbm - sens_rx_dbm
-        perdidas_totales = atenuacion_cable_db + perdidas_empalmes_db + perdidas_conectores_db
-        return perdida_permitida - perdidas_totales
-
-# ==========================================
-# INTERFAZ GRÁFICA
-# ==========================================
 class App(ctk.CTk):
     def __init__(self):
         super().__init__()
         self.title("Suite de Simulación Electrónica y Óptica")
-        self.geometry("850x600") # Un poco más grande para que todo quepa holgado
+        self.geometry("1100x750") # Un poco más ancho para acomodar todo
         ctk.set_appearance_mode("dark")
         ctk.set_default_color_theme("blue")
         
-        self.contenedor = ctk.CTkFrame(self)
-        self.contenedor.pack(fill="both", expand=True, padx=20, pady=20)
-        
-        self.mostrar_menu_principal()
+        self.grid_columnconfigure(1, weight=1)
+        self.grid_rowconfigure(0, weight=1)
 
-    def limpiar_contenedor(self):
-        for widget in self.contenedor.winfo_children():
+        # ==========================================
+        # BARRA LATERAL (ACORDEÓN DINÁMICO)
+        # ==========================================
+        self.sidebar_frame = ctk.CTkFrame(self, width=250, corner_radius=0)
+        self.sidebar_frame.grid(row=0, column=0, sticky="nsew")
+        self.sidebar_frame.grid_rowconfigure(10, weight=1) 
+
+        self.logo_label = ctk.CTkLabel(self.sidebar_frame, text="ÓpticaSuite Pro", font=ctk.CTkFont(size=22, weight="bold"))
+        self.logo_label.grid(row=0, column=0, padx=20, pady=(30, 20))
+
+        self.btn_menu = ctk.CTkButton(self.sidebar_frame, text="🏠 Inicio", anchor="w", fg_color="transparent", text_color="gray90", hover_color="gray30", command=self.mostrar_inicio)
+        self.btn_menu.grid(row=1, column=0, padx=10, pady=5, sticky="ew")
+
+        # --- BOTÓN TOGGLE: MÓDULO BASE ---
+        self.menu_base_visible = True
+        self.btn_toggle_base = ctk.CTkButton(self.sidebar_frame, text="▼ MÓDULO ÓPTICO BASE", anchor="w", font=ctk.CTkFont(weight="bold"), fg_color="transparent", hover_color="gray30", command=self.toggle_menu_base)
+        self.btn_toggle_base.grid(row=2, column=0, padx=10, pady=(15, 5), sticky="ew")
+
+        self.frame_sub_base = ctk.CTkFrame(self.sidebar_frame, fg_color="transparent")
+        self.frame_sub_base.grid(row=3, column=0, sticky="ew", padx=15)
+        
+        ctk.CTkButton(self.frame_sub_base, text="📉 Atenuación", anchor="w", fg_color="transparent", hover_color="gray30", command=self.vista_calculo_atenuacion).pack(fill="x", pady=2)
+        ctk.CTkButton(self.frame_sub_base, text="🎯 Eficiencia", anchor="w", fg_color="transparent", hover_color="gray30", command=self.vista_calculo_eficiencia).pack(fill="x", pady=2)
+        ctk.CTkButton(self.frame_sub_base, text="⚡ Power Budget", anchor="w", fg_color="transparent", hover_color="gray30", command=self.vista_presupuesto_potencia).pack(fill="x", pady=2)
+
+        # --- BOTÓN TOGGLE: MÓDULO A ---
+        self.menu_moda_visible = False
+        self.btn_toggle_moda = ctk.CTkButton(self.sidebar_frame, text="▶ MÓDULO A: DISPERSIÓN", anchor="w", font=ctk.CTkFont(weight="bold"), fg_color="transparent", hover_color="#6b5317", text_color="#d4af37", command=self.toggle_menu_moda)
+        self.btn_toggle_moda.grid(row=4, column=0, padx=10, pady=(15, 5), sticky="ew")
+
+        self.frame_sub_moda = ctk.CTkFrame(self.sidebar_frame, fg_color="transparent")
+        # No lo ubicamos en el grid todavía porque inicia cerrado
+        
+        ctk.CTkButton(self.frame_sub_moda, text="📐 Óptica Geométrica", anchor="w", fg_color="transparent", hover_color="#6b5317", command=self.vista_moda_geometrica).pack(fill="x", pady=2)
+        ctk.CTkButton(self.frame_sub_moda, text="🔢 Número V y Modos", anchor="w", fg_color="transparent", hover_color="#6b5317", command=self.vista_moda_parametros).pack(fill="x", pady=2)
+        ctk.CTkButton(self.frame_sub_moda, text="⏱️ Dispersión y Retardos", anchor="w", fg_color="transparent", hover_color="#6b5317", command=self.vista_moda_dispersion).pack(fill="x", pady=2)
+
+        # --- MÓDULO B (Futuro) ---
+        ctk.CTkLabel(self.sidebar_frame, text="MÓDULOS FUTUROS", font=ctk.CTkFont(size=11, weight="bold"), text_color="gray").grid(row=8, column=0, padx=20, pady=(20, 5), sticky="w")
+        ctk.CTkButton(self.sidebar_frame, text="🔒 Módulo B", anchor="w", state="disabled", fg_color="transparent").grid(row=9, column=0, padx=10, pady=(5, 20), sticky="ew")
+
+        # --- ÁREA PRINCIPAL ---
+        self.main_frame = ctk.CTkFrame(self, fg_color="transparent")
+        self.main_frame.grid(row=0, column=1, sticky="nsew", padx=30, pady=20)
+        self.mostrar_inicio()
+
+    # ==========================================
+    # LÓGICA DEL MENÚ ACORDEÓN
+    # ==========================================
+    def toggle_menu_base(self):
+        if not self.menu_base_visible:
+            # Abrir Base
+            self.frame_sub_base.grid(row=3, column=0, sticky="ew", padx=15)
+            self.btn_toggle_base.configure(text="▼ MÓDULO ÓPTICO BASE")
+            self.menu_base_visible = True
+            # Cerrar Mod A
+            self.frame_sub_moda.grid_remove()
+            self.btn_toggle_moda.configure(text="▶ MÓDULO A: DISPERSIÓN")
+            self.menu_moda_visible = False
+
+    def toggle_menu_moda(self):
+        if not self.menu_moda_visible:
+            # Abrir Mod A
+            self.frame_sub_moda.grid(row=5, column=0, sticky="ew", padx=15)
+            self.btn_toggle_moda.configure(text="▼ MÓDULO A: DISPERSIÓN")
+            self.menu_moda_visible = True
+            # Cerrar Base
+            self.frame_sub_base.grid_remove()
+            self.btn_toggle_base.configure(text="▶ MÓDULO ÓPTICO BASE")
+            self.menu_base_visible = False
+
+    def limpiar_main_frame(self):
+        for widget in self.main_frame.winfo_children():
             widget.destroy()
 
-    def mostrar_menu_principal(self):
-        self.limpiar_contenedor()
-        
-        titulo = ctk.CTkLabel(self.contenedor, text="Módulos de Simulación", font=("Arial", 24, "bold"))
-        titulo.pack(pady=30)
-        
-        btn_mod1 = ctk.CTkButton(self.contenedor, text="1. Motor de Cálculo Óptico", width=300, height=50, command=self.mostrar_menu_optico)
-        btn_mod1.pack(pady=10)
-        
-        btn_mod2 = ctk.CTkButton(self.contenedor, text="2. Módulo Externo A (Pendiente)", width=300, height=50, state="disabled")
-        btn_mod2.pack(pady=10)
-        
-        btn_mod3 = ctk.CTkButton(self.contenedor, text="3. Módulo Externo B (Pendiente)", width=300, height=50, state="disabled")
-        btn_mod3.pack(pady=10)
+    def mostrar_inicio(self):
+        self.limpiar_main_frame()
+        ctk.CTkLabel(self.main_frame, text="Bienvenido a ÓpticaSuite Pro", font=ctk.CTkFont(size=28, weight="bold")).pack(pady=(50, 10))
+        ctk.CTkLabel(self.main_frame, text="Expande los módulos en la barra lateral para ver los cálculos disponibles.", text_color="gray", font=ctk.CTkFont(size=16)).pack(pady=10)
 
-    def mostrar_menu_optico(self):
-        self.limpiar_contenedor()
-        
-        btn_volver = ctk.CTkButton(self.contenedor, text="← Volver al Menú", width=150, fg_color="gray", hover_color="darkgray", command=self.mostrar_menu_principal)
-        btn_volver.pack(anchor="nw", pady=10, padx=10)
-        
-        titulo = ctk.CTkLabel(self.contenedor, text="Motor de Cálculo Óptico", font=("Arial", 22, "bold"))
-        titulo.pack(pady=10)
-        
-        btn_atenuacion = ctk.CTkButton(self.contenedor, text="Calcular Atenuación (dB/km)", width=250, command=self.vista_calculo_atenuacion)
-        btn_atenuacion.pack(pady=10)
-        
-        btn_eficiencia = ctk.CTkButton(self.contenedor, text="Calcular Eficiencia de Acoplamiento", width=250, command=self.vista_calculo_eficiencia) 
-        btn_eficiencia.pack(pady=10)
-        
-        btn_presupuesto = ctk.CTkButton(self.contenedor, text="Presupuesto de Potencia", width=250, command=self.vista_presupuesto_potencia)
-        btn_presupuesto.pack(pady=10)
-
-    def abrir_ayuda(self, concepto, definicion):
-        ventana_ayuda = ctk.CTkToplevel(self)
-        ventana_ayuda.title(f"Ayuda: {concepto}")
-        ventana_ayuda.geometry("400x250")
-        ventana_ayuda.attributes("-topmost", True) 
-        
-        ctk.CTkLabel(ventana_ayuda, text=concepto, font=("Arial", 16, "bold")).pack(pady=(20, 10))
-        ctk.CTkLabel(ventana_ayuda, text=definicion, wraplength=350, justify="left").pack(padx=20, pady=10)
-        ctk.CTkLabel(ventana_ayuda, text="Para más información y derivación de fórmulas, consulte el libro:\nFiber Optic Communications por Gerd Keiser.", text_color="gray", wraplength=350, justify="center", font=("Arial", 11, "italic")).pack(side="bottom", pady=20)
-
-    # === VISTA 1: ATENUACIÓN ===
+    # ==========================================
+    # VISTAS DEL MÓDULO ÓPTICO BASE (Resumidas para ahorrar espacio)
+    # ==========================================
     def vista_calculo_atenuacion(self):
-        self.limpiar_contenedor()
-        btn_volver = ctk.CTkButton(self.contenedor, text="← Volver a Módulo Óptico", width=180, fg_color="gray", hover_color="darkgray", command=self.mostrar_menu_optico)
-        btn_volver.pack(anchor="nw", pady=10, padx=10)
-        
-        ctk.CTkLabel(self.contenedor, text="Cálculo de Atenuación (dB/km)", font=("Arial", 20, "bold")).pack(pady=10)
-        
-        frame_inputs = ctk.CTkFrame(self.contenedor, fg_color="transparent")
-        frame_inputs.pack(pady=20)
+        self.limpiar_main_frame()
+        ctk.CTkLabel(self.main_frame, text="📉 Cálculo de Atenuación", font=ctk.CTkFont(size=24, weight="bold")).pack(anchor="w", pady=(0, 20))
+        card = ctk.CTkFrame(self.main_frame, corner_radius=10); card.pack(fill="x", pady=10, ipady=10)
+        ctk.CTkLabel(card, text="P_in (mW):").grid(row=0, column=0, padx=20, pady=10); ent_pin = ctk.CTkEntry(card); ent_pin.grid(row=0, column=1)
+        ctk.CTkLabel(card, text="P_out (mW):").grid(row=1, column=0, padx=20, pady=10); ent_pout = ctk.CTkEntry(card); ent_pout.grid(row=1, column=1)
+        ctk.CTkLabel(card, text="Distancia (km):").grid(row=2, column=0, padx=20, pady=10); ent_z = ctk.CTkEntry(card); ent_z.grid(row=2, column=1)
+        res = ctk.CTkLabel(self.main_frame, text="Atenuación: -- dB/km", font=ctk.CTkFont(size=20, weight="bold")); res.pack(pady=20)
+        ctk.CTkButton(self.main_frame, text="Calcular", command=lambda: self.ejecutar_base(MotorCalculoOptico.calcular_atenuacion_db_km, res, "Atenuación: {:.4f} dB/km", ent_pin, ent_pout, ent_z)).pack()
 
-        ctk.CTkLabel(frame_inputs, text="Potencia Inicial (P_in):").grid(row=0, column=0, padx=10, pady=10, sticky="e")
-        ent_pin = ctk.CTkEntry(frame_inputs, placeholder_text="Ej. 1.0")
-        ent_pin.grid(row=0, column=1, padx=10, pady=10)
-        ctk.CTkLabel(frame_inputs, text="[Rango típico: 0.1 - 10 mW]", text_color="gray").grid(row=0, column=2, padx=10, pady=10)
-        ctk.CTkButton(frame_inputs, text="?", width=30, command=lambda: self.abrir_ayuda("Potencia Inicial (P_in)", "Potencia luminosa de entrada (mW o uW).")).grid(row=0, column=3, padx=5)
-
-        ctk.CTkLabel(frame_inputs, text="Potencia Final (P_out):").grid(row=1, column=0, padx=10, pady=10, sticky="e")
-        ent_pout = ctk.CTkEntry(frame_inputs, placeholder_text="Ej. 0.5")
-        ent_pout.grid(row=1, column=1, padx=10, pady=10)
-        ctk.CTkLabel(frame_inputs, text="[Debe ser < P_in]", text_color="gray").grid(row=1, column=2, padx=10, pady=10)
-        ctk.CTkButton(frame_inputs, text="?", width=30, command=lambda: self.abrir_ayuda("Potencia Final (P_out)", "Potencia óptica medida al final de la fibra.")).grid(row=1, column=3, padx=5)
-
-        ctk.CTkLabel(frame_inputs, text="Distancia (z) en km:").grid(row=2, column=0, padx=10, pady=10, sticky="e")
-        ent_z = ctk.CTkEntry(frame_inputs, placeholder_text="Ej. 20.0")
-        ent_z.grid(row=2, column=1, padx=10, pady=10)
-        ctk.CTkLabel(frame_inputs, text="[Rango típico: 1 - 100 km]", text_color="gray").grid(row=2, column=2, padx=10, pady=10)
-        ctk.CTkButton(frame_inputs, text="?", width=30, command=lambda: self.abrir_ayuda("Distancia (z)", "Longitud de la fibra óptica en km.")).grid(row=2, column=3, padx=5)
-
-        lbl_resultado = ctk.CTkLabel(self.contenedor, text="Resultado: -- dB/km", font=("Arial", 16, "bold"))
-        btn_calcular = ctk.CTkButton(self.contenedor, text="Calcular", width=150, command=lambda: self.ejecutar_atenuacion(ent_pin, ent_pout, ent_z, lbl_resultado))
-        btn_calcular.pack(pady=20)
-        lbl_resultado.pack()
-
-    def ejecutar_atenuacion(self, ent_pin, ent_pout, ent_z, lbl_resultado):
-        try:
-            res = MotorCalculoOptico.calcular_atenuacion_db_km(float(ent_pin.get()), float(ent_pout.get()), float(ent_z.get()))
-            lbl_resultado.configure(text=f"Resultado: {res:.4f} dB/km", text_color="white")
-        except ValueError:
-            messagebox.showerror("Error", "Ingresa valores numéricos válidos > 0.")
-
-    # === VISTA 2: EFICIENCIA ===
     def vista_calculo_eficiencia(self):
-        self.limpiar_contenedor()
-        btn_volver = ctk.CTkButton(self.contenedor, text="← Volver a Módulo Óptico", width=180, fg_color="gray", hover_color="darkgray", command=self.mostrar_menu_optico)
-        btn_volver.pack(anchor="nw", pady=10, padx=10)
-        
-        ctk.CTkLabel(self.contenedor, text="Eficiencia de Acoplamiento (η)", font=("Arial", 20, "bold")).pack(pady=10)
-        
-        frame_inputs = ctk.CTkFrame(self.contenedor, fg_color="transparent")
-        frame_inputs.pack(pady=20)
+        self.limpiar_main_frame()
+        ctk.CTkLabel(self.main_frame, text="🎯 Eficiencia de Acoplamiento", font=ctk.CTkFont(size=24, weight="bold")).pack(anchor="w", pady=(0, 20))
+        card = ctk.CTkFrame(self.main_frame, corner_radius=10); card.pack(fill="x", pady=10, ipady=10)
+        ctk.CTkLabel(card, text="Radio rs (µm):").grid(row=0, column=0, padx=20, pady=10); ent_rs = ctk.CTkEntry(card); ent_rs.grid(row=0, column=1)
+        ctk.CTkLabel(card, text="Radio a (µm):").grid(row=1, column=0, padx=20, pady=10); ent_a = ctk.CTkEntry(card); ent_a.grid(row=1, column=1)
+        ctk.CTkLabel(card, text="NA:").grid(row=2, column=0, padx=20, pady=10); ent_na = ctk.CTkEntry(card); ent_na.grid(row=2, column=1)
+        res = ctk.CTkLabel(self.main_frame, text="Eficiencia (η): --", font=ctk.CTkFont(size=20, weight="bold")); res.pack(pady=20)
+        ctk.CTkButton(self.main_frame, text="Calcular", command=lambda: self.ejecutar_base(MotorCalculoOptico.eficiencia_acoplamiento, res, "Eficiencia: {:.4f}", ent_rs, ent_a, ent_na)).pack()
 
-        ctk.CTkLabel(frame_inputs, text="Radio de la Fuente (rs):").grid(row=0, column=0, padx=10, pady=10, sticky="e")
-        ent_rs = ctk.CTkEntry(frame_inputs, placeholder_text="Ej. 50.0")
-        ent_rs.grid(row=0, column=1, padx=10, pady=10)
-        ctk.CTkLabel(frame_inputs, text="[µm]", text_color="gray").grid(row=0, column=2, padx=10, pady=10)
-        ctk.CTkButton(frame_inputs, text="?", width=30, command=lambda: self.abrir_ayuda("Radio de la Fuente (rs)", "Radio del área emisora (LED/Láser) en µm.")).grid(row=0, column=3, padx=5)
-
-        ctk.CTkLabel(frame_inputs, text="Radio del Núcleo (a):").grid(row=1, column=0, padx=10, pady=10, sticky="e")
-        ent_a = ctk.CTkEntry(frame_inputs, placeholder_text="Ej. 25.0")
-        ent_a.grid(row=1, column=1, padx=10, pady=10)
-        ctk.CTkLabel(frame_inputs, text="[µm]", text_color="gray").grid(row=1, column=2, padx=10, pady=10)
-        ctk.CTkButton(frame_inputs, text="?", width=30, command=lambda: self.abrir_ayuda("Radio del Núcleo (a)", "Radio del núcleo de la fibra en µm.")).grid(row=1, column=3, padx=5)
-
-        ctk.CTkLabel(frame_inputs, text="Apertura Numérica (NA):").grid(row=2, column=0, padx=10, pady=10, sticky="e")
-        ent_na = ctk.CTkEntry(frame_inputs, placeholder_text="Ej. 0.22")
-        ent_na.grid(row=2, column=1, padx=10, pady=10)
-        ctk.CTkLabel(frame_inputs, text="[Adimensional]", text_color="gray").grid(row=2, column=2, padx=10, pady=10)
-        ctk.CTkButton(frame_inputs, text="?", width=30, command=lambda: self.abrir_ayuda("Apertura Numérica (NA)", "Capacidad de la fibra para captar luz.")).grid(row=2, column=3, padx=5)
-
-        lbl_resultado = ctk.CTkLabel(self.contenedor, text="Resultado: -- %", font=("Arial", 16, "bold"))
-        btn_calcular = ctk.CTkButton(self.contenedor, text="Calcular", width=150, command=lambda: self.ejecutar_eficiencia(ent_rs, ent_a, ent_na, lbl_resultado))
-        btn_calcular.pack(pady=20)
-        lbl_resultado.pack()
-
-    def ejecutar_eficiencia(self, ent_rs, ent_a, ent_na, lbl_resultado):
-        try:
-            res = MotorCalculoOptico.eficiencia_acoplamiento(float(ent_rs.get()), float(ent_a.get()), float(ent_na.get()))
-            lbl_resultado.configure(text=f"Resultado: {res * 100:.2f} %  (η = {res:.4f})", text_color="white")
-        except ValueError:
-            messagebox.showerror("Error", "Ingresa valores numéricos válidos > 0.")
-
-    # === VISTA 3: PRESUPUESTO DE POTENCIA ===
     def vista_presupuesto_potencia(self):
-        self.limpiar_contenedor()
-        btn_volver = ctk.CTkButton(self.contenedor, text="← Volver a Módulo Óptico", width=180, fg_color="gray", hover_color="darkgray", command=self.mostrar_menu_optico)
-        btn_volver.pack(anchor="nw", pady=10, padx=10)
-        
-        ctk.CTkLabel(self.contenedor, text="Presupuesto de Potencia (Power Budget)", font=("Arial", 20, "bold")).pack(pady=10)
-        
-        frame_inputs = ctk.CTkFrame(self.contenedor, fg_color="transparent")
-        frame_inputs.pack(pady=10)
+        self.limpiar_main_frame()
+        ctk.CTkLabel(self.main_frame, text="⚡ Presupuesto de Potencia", font=ctk.CTkFont(size=24, weight="bold")).pack(anchor="w", pady=(0, 10))
+        card = ctk.CTkFrame(self.main_frame, corner_radius=10); card.pack(fill="x", pady=10)
+        ctk.CTkLabel(card, text="P Tx (dBm):").grid(row=0, column=0, padx=10, pady=5); ent_tx = ctk.CTkEntry(card); ent_tx.grid(row=0, column=1)
+        ctk.CTkLabel(card, text="P Rx (dBm):").grid(row=1, column=0, padx=10, pady=5); ent_rx = ctk.CTkEntry(card); ent_rx.grid(row=1, column=1)
+        ctk.CTkLabel(card, text="Cable (dB):").grid(row=2, column=0, padx=10, pady=5); ent_cab = ctk.CTkEntry(card); ent_cab.grid(row=2, column=1)
+        ctk.CTkLabel(card, text="Empalmes (dB):").grid(row=3, column=0, padx=10, pady=5); ent_emp = ctk.CTkEntry(card); ent_emp.grid(row=3, column=1)
+        ctk.CTkLabel(card, text="Conectores (dB):").grid(row=4, column=0, padx=10, pady=5); ent_con = ctk.CTkEntry(card); ent_con.grid(row=4, column=1)
+        res = ctk.CTkLabel(self.main_frame, text="Margen: -- dB", font=ctk.CTkFont(size=20, weight="bold")); res.pack(pady=15)
+        ctk.CTkButton(self.main_frame, text="Calcular", command=lambda: self.ejecutar_base(MotorCalculoOptico.margen_potencia, res, "Margen: {:.2f} dB", ent_tx, ent_rx, ent_cab, ent_emp, ent_con)).pack()
 
-        ctk.CTkLabel(frame_inputs, text="Potencia Tx (P_tx):").grid(row=0, column=0, padx=10, pady=8, sticky="e")
-        ent_ptx = ctk.CTkEntry(frame_inputs, placeholder_text="Ej. 3.0")
-        ent_ptx.grid(row=0, column=1, padx=10, pady=8)
-        ctk.CTkLabel(frame_inputs, text="[dBm]", text_color="gray").grid(row=0, column=2, padx=10, pady=8)
-        ctk.CTkButton(frame_inputs, text="?", width=30, command=lambda: self.abrir_ayuda("Potencia Tx", "Potencia de salida en dBm.")).grid(row=0, column=3, padx=5)
-
-        ctk.CTkLabel(frame_inputs, text="Sensibilidad Rx (P_rx):").grid(row=1, column=0, padx=10, pady=8, sticky="e")
-        ent_prx = ctk.CTkEntry(frame_inputs, placeholder_text="Ej. -32.0")
-        ent_prx.grid(row=1, column=1, padx=10, pady=8)
-        ctk.CTkLabel(frame_inputs, text="[dBm]", text_color="gray").grid(row=1, column=2, padx=10, pady=8)
-        ctk.CTkButton(frame_inputs, text="?", width=30, command=lambda: self.abrir_ayuda("Sensibilidad Rx", "Nivel mínimo requerido por el detector.")).grid(row=1, column=3, padx=5)
-
-        ctk.CTkLabel(frame_inputs, text="Pérdida Cable:").grid(row=2, column=0, padx=10, pady=8, sticky="e")
-        ent_cable = ctk.CTkEntry(frame_inputs, placeholder_text="Ej. 15.0")
-        ent_cable.grid(row=2, column=1, padx=10, pady=8)
-        ctk.CTkLabel(frame_inputs, text="[dB]", text_color="gray").grid(row=2, column=2, padx=10, pady=8)
-        ctk.CTkButton(frame_inputs, text="?", width=30, command=lambda: self.abrir_ayuda("Pérdida del Cable", "Atenuación total de la fibra.")).grid(row=2, column=3, padx=5)
-
-        ctk.CTkLabel(frame_inputs, text="Pérdidas Empalmes:").grid(row=3, column=0, padx=10, pady=8, sticky="e")
-        ent_empalmes = ctk.CTkEntry(frame_inputs, placeholder_text="Ej. 1.0")
-        ent_empalmes.grid(row=3, column=1, padx=10, pady=8)
-        ctk.CTkLabel(frame_inputs, text="[dB]", text_color="gray").grid(row=3, column=2, padx=10, pady=8)
-        ctk.CTkButton(frame_inputs, text="?", width=30, command=lambda: self.abrir_ayuda("Pérdidas Empalmes", "Atenuación por empalmes.")).grid(row=3, column=3, padx=5)
-
-        ctk.CTkLabel(frame_inputs, text="Pérdidas Conectores:").grid(row=4, column=0, padx=10, pady=8, sticky="e")
-        ent_conectores = ctk.CTkEntry(frame_inputs, placeholder_text="Ej. 2.0")
-        ent_conectores.grid(row=4, column=1, padx=10, pady=8)
-        ctk.CTkLabel(frame_inputs, text="[dB]", text_color="gray").grid(row=4, column=2, padx=10, pady=8)
-        ctk.CTkButton(frame_inputs, text="?", width=30, command=lambda: self.abrir_ayuda("Pérdidas Conectores", "Atenuación por conectores mecánicos.")).grid(row=4, column=3, padx=5)
-
-        lbl_resultado = ctk.CTkLabel(self.contenedor, text="Margen: -- dB", font=("Arial", 16, "bold"))
-        btn_calcular = ctk.CTkButton(self.contenedor, text="Calcular Margen", width=150, command=lambda: self.ejecutar_presupuesto(ent_ptx, ent_prx, ent_cable, ent_empalmes, ent_conectores, lbl_resultado))
-        btn_calcular.pack(pady=15)
-        lbl_resultado.pack()
-
-    def ejecutar_presupuesto(self, ent_ptx, ent_prx, ent_cable, ent_empalmes, ent_conectores, lbl_resultado):
+    def ejecutar_base(self, func, lbl, formato, *entradas):
         try:
-            margen = MotorCalculoOptico.margen_potencia(float(ent_ptx.get()), float(ent_prx.get()), float(ent_cable.get()), float(ent_empalmes.get()), float(ent_conectores.get()))
-            if margen >= 0:
-                lbl_resultado.configure(text=f"Margen del Sistema: {margen:.2f} dB  (Sistema Viable)", text_color="green")
-            else:
-                lbl_resultado.configure(text=f"Margen del Sistema: {margen:.2f} dB  (Sistema NO Viable)", text_color="red")
-        except ValueError:
-            messagebox.showerror("Error", "Ingresa valores numéricos (usa 0 si no hay pérdidas de empalmes o conectores).")
+            valores = [float(e.get()) for e in entradas]
+            res = func(*valores)
+            lbl.configure(text=formato.format(res))
+        except ValueError as e:
+            messagebox.showerror("Error", "Ingresa números válidos.")
+
+    # ==========================================
+    # VISTAS DEL MÓDULO A (Con Scroll y TODAS las fórmulas)
+    # ==========================================
+    def crear_area_scroll(self, titulo):
+        """Helper para limpiar y crear el área de scroll"""
+        self.limpiar_main_frame()
+        ctk.CTkLabel(self.main_frame, text=titulo, font=ctk.CTkFont(size=24, weight="bold"), text_color="#d4af37").pack(anchor="w", pady=(0, 10))
+        scroll = ctk.CTkScrollableFrame(self.main_frame, fg_color="transparent")
+        scroll.pack(fill="both", expand=True)
+        return scroll
+
+    # --- MÓDULO A: PANTALLA 1 ---
+    def vista_moda_geometrica(self):
+        scroll = self.crear_area_scroll("📐 Óptica Geométrica")
+
+        # Tarjeta 1: Índice de Refracción
+        c1 = ctk.CTkFrame(scroll, corner_radius=10); c1.pack(fill="x", pady=10, ipady=5)
+        ctk.CTkLabel(c1, text="Índice de Refracción (n = c/v)", font=ctk.CTkFont(weight="bold")).grid(row=0, column=0, columnspan=3, pady=10)
+        ctk.CTkLabel(c1, text="Velocidad v (m/s):").grid(row=1, column=0, padx=10); ent_v = ctk.CTkEntry(c1, placeholder_text="Ej. 2e8"); ent_v.grid(row=1, column=1)
+        res_n = ctk.CTkLabel(c1, text="n = --", text_color="yellow"); res_n.grid(row=1, column=2, padx=20)
+        ctk.CTkButton(c1, text="Calcular", fg_color="#8d6e1f", hover_color="#6b5317", width=100, command=lambda: self.ejecutar_mod_a(MotorModuloA.indice_refraccion, res_n, "n = {:.4f}", ent_v)).grid(row=1, column=3, padx=10)
+
+        # Tarjeta 2: Ley de Snell
+        c2 = ctk.CTkFrame(scroll, corner_radius=10); c2.pack(fill="x", pady=10, ipady=5)
+        ctk.CTkLabel(c2, text="Ley de Snell (Refracción)", font=ctk.CTkFont(weight="bold")).grid(row=0, column=0, columnspan=3, pady=10)
+        ctk.CTkLabel(c2, text="n1:").grid(row=1, column=0); ent_sn1 = ctk.CTkEntry(c2, width=70); ent_sn1.grid(row=1, column=1, padx=5)
+        ctk.CTkLabel(c2, text="n2:").grid(row=1, column=2); ent_sn2 = ctk.CTkEntry(c2, width=70); ent_sn2.grid(row=1, column=3, padx=5)
+        ctk.CTkLabel(c2, text="θ1 (°):").grid(row=1, column=4); ent_sth1 = ctk.CTkEntry(c2, width=70); ent_sth1.grid(row=1, column=5, padx=5)
+        res_snell = ctk.CTkLabel(c2, text="θ2 = -- °", text_color="yellow"); res_snell.grid(row=2, column=0, columnspan=4, pady=10)
+        ctk.CTkButton(c2, text="Calcular", fg_color="#8d6e1f", hover_color="#6b5317", width=100, command=lambda: self.ejecutar_mod_a(MotorModuloA.angulo_refraccion_snell, res_snell, "θ2 = {:.2f} °", ent_sn1, ent_sn2, ent_sth1)).grid(row=2, column=4, columnspan=2)
+
+        # Tarjeta 3: Parámetros del Núcleo
+        c3 = ctk.CTkFrame(scroll, corner_radius=10); c3.pack(fill="x", pady=10, ipady=5)
+        ctk.CTkLabel(c3, text="Parámetros del Núcleo y Revestimiento", font=ctk.CTkFont(weight="bold")).grid(row=0, column=0, columnspan=3, pady=10)
+        ctk.CTkLabel(c3, text="Índice n1:").grid(row=1, column=0); ent_pn1 = ctk.CTkEntry(c3); ent_pn1.grid(row=1, column=1, padx=10)
+        ctk.CTkLabel(c3, text="Índice n2:").grid(row=2, column=0); ent_pn2 = ctk.CTkEntry(c3); ent_pn2.grid(row=2, column=1, padx=10, pady=5)
+        res_param = ctk.CTkLabel(c3, text="Áng. Crítico: -- °\nNA: --\nΔ: --", text_color="yellow", justify="left"); res_param.grid(row=1, column=2, rowspan=2, padx=20)
+        ctk.CTkButton(c3, text="Calcular", fg_color="#8d6e1f", hover_color="#6b5317", width=100, command=lambda: self.calc_parametros_nucleo(ent_pn1, ent_pn2, res_param)).grid(row=1, column=3, rowspan=2)
+
+    def calc_parametros_nucleo(self, en1, en2, lbl):
+        try:
+            n1, n2 = float(en1.get()), float(en2.get())
+            ac = MotorModuloA.angulo_critico(n1, n2)
+            na = MotorModuloA.apertura_numerica(n1, n2)
+            delta = MotorModuloA.diferencia_indice_relativa(n1, n2)
+            lbl.configure(text=f"Áng. Crítico: {ac:.2f} °\nNA: {na:.4f}\nΔ: {delta:.4f} ({delta*100:.2f}%)")
+        except Exception as e:
+            messagebox.showerror("Error", str(e))
+
+    # --- MÓDULO A: PANTALLA 2 ---
+    def vista_moda_parametros(self):
+        scroll = self.crear_area_scroll("🔢 Número V y Modos")
+
+        # Tarjeta 1: Número V y Modos
+        c1 = ctk.CTkFrame(scroll, corner_radius=10); c1.pack(fill="x", pady=10, ipady=5)
+        ctk.CTkLabel(c1, text="Frecuencia Normalizada (V) y Modos", font=ctk.CTkFont(weight="bold")).grid(row=0, column=0, columnspan=3, pady=10)
+        ctk.CTkLabel(c1, text="Radio a (µm):").grid(row=1, column=0, padx=10); ent_a = ctk.CTkEntry(c1, width=80); ent_a.grid(row=1, column=1, pady=5)
+        ctk.CTkLabel(c1, text="Long. Onda λ (µm):").grid(row=2, column=0, padx=10); ent_lam = ctk.CTkEntry(c1, width=80); ent_lam.grid(row=2, column=1, pady=5)
+        ctk.CTkLabel(c1, text="Apertura NA:").grid(row=3, column=0, padx=10); ent_na = ctk.CTkEntry(c1, width=80); ent_na.grid(row=3, column=1, pady=5)
+        ctk.CTkLabel(c1, text="Perfil α (Opcional):").grid(row=4, column=0, padx=10); ent_alf = ctk.CTkEntry(c1, width=80, placeholder_text="Ej. 2.0"); ent_alf.grid(row=4, column=1, pady=5)
+        res_v = ctk.CTkLabel(c1, text="V = --\nModos Escalonado = --\nModos Gradual = --", text_color="yellow", justify="left"); res_v.grid(row=1, column=2, rowspan=3, padx=20)
+        ctk.CTkButton(c1, text="Calcular", fg_color="#8d6e1f", hover_color="#6b5317", width=100, command=lambda: self.calc_v_y_modos(ent_a, ent_lam, ent_na, ent_alf, res_v)).grid(row=4, column=2, padx=10)
+
+        # Tarjeta 2: Radio Campo Modal
+        c2 = ctk.CTkFrame(scroll, corner_radius=10); c2.pack(fill="x", pady=10, ipady=5)
+        ctk.CTkLabel(c2, text="Radio del Campo Modal (Spot Size w0)", font=ctk.CTkFont(weight="bold")).grid(row=0, column=0, columnspan=3, pady=10)
+        ctk.CTkLabel(c2, text="Radio a (µm):").grid(row=1, column=0, padx=10); ent_wa = ctk.CTkEntry(c2); ent_wa.grid(row=1, column=1)
+        ctk.CTkLabel(c2, text="Número V:").grid(row=2, column=0, padx=10); ent_wv = ctk.CTkEntry(c2); ent_wv.grid(row=2, column=1, pady=5)
+        res_w = ctk.CTkLabel(c2, text="w0 = -- µm", text_color="yellow"); res_w.grid(row=1, column=2, rowspan=2, padx=20)
+        ctk.CTkButton(c2, text="Calcular", fg_color="#8d6e1f", hover_color="#6b5317", width=100, command=lambda: self.ejecutar_mod_a(MotorModuloA.radio_campo_modal, res_w, "w0 = {:.4f} µm", ent_wa, ent_wv)).grid(row=1, column=3, rowspan=2)
+
+    def calc_v_y_modos(self, ea, el, ena, ealf, lbl):
+        try:
+            a, lam, na = float(ea.get()), float(el.get()), float(ena.get())
+            v = MotorModuloA.frecuencia_normalizada_v(a, lam, na)
+            m_esc = MotorModuloA.modos_guiados_escalonado(v)
+            m_grad = "--"
+            if ealf.get() != "":
+                m_grad = MotorModuloA.modos_guiados_gradual(v, float(ealf.get()))
+            lbl.configure(text=f"V = {v:.4f}\nModos Escalonado = {m_esc}\nModos Gradual = {m_grad}")
+        except Exception as e:
+            messagebox.showerror("Error", str(e))
+
+    # --- MÓDULO A: PANTALLA 3 ---
+    def vista_moda_dispersion(self):
+        scroll = self.crear_area_scroll("⏱️ Dispersión y Retardos")
+
+        # Tarjeta 1: Retardo Modal
+        c1 = ctk.CTkFrame(scroll, corner_radius=10); c1.pack(fill="x", pady=10, ipady=5)
+        ctk.CTkLabel(c1, text="Retardo Modal (Fibra Escalonada)", font=ctk.CTkFont(weight="bold")).grid(row=0, column=0, columnspan=3, pady=10)
+        ctk.CTkLabel(c1, text="Long. L (m):").grid(row=1, column=0, padx=5); ent_rl = ctk.CTkEntry(c1, width=70); ent_rl.grid(row=1, column=1)
+        ctk.CTkLabel(c1, text="n1:").grid(row=1, column=2, padx=5); ent_rn1 = ctk.CTkEntry(c1, width=70); ent_rn1.grid(row=1, column=3)
+        ctk.CTkLabel(c1, text="Δ:").grid(row=1, column=4, padx=5); ent_rdelta = ctk.CTkEntry(c1, width=70); ent_rdelta.grid(row=1, column=5)
+        res_ret = ctk.CTkLabel(c1, text="ΔT = -- s", text_color="yellow"); res_ret.grid(row=2, column=0, columnspan=4, pady=10)
+        ctk.CTkButton(c1, text="Calcular", fg_color="#8d6e1f", hover_color="#6b5317", width=100, command=lambda: self.ejecutar_mod_a(MotorModuloA.retardo_modal_escalonado, res_ret, "ΔT = {:.3e} s", ent_rl, ent_rn1, ent_rdelta)).grid(row=2, column=4, columnspan=2)
+
+        # Tarjeta 2: Dispersión Cromática
+        c2 = ctk.CTkFrame(scroll, corner_radius=10); c2.pack(fill="x", pady=10, ipady=5)
+        ctk.CTkLabel(c2, text="Ensanchamiento Total (Dispersión Cromática)", font=ctk.CTkFont(weight="bold")).grid(row=0, column=0, columnspan=3, pady=10)
+        ctk.CTkLabel(c2, text="D (ps/nm·km):").grid(row=1, column=0, padx=5); ent_ed = ctk.CTkEntry(c2, width=70); ent_ed.grid(row=1, column=1)
+        ctk.CTkLabel(c2, text="L (km):").grid(row=1, column=2, padx=5); ent_el = ctk.CTkEntry(c2, width=70); ent_el.grid(row=1, column=3)
+        ctk.CTkLabel(c2, text="σ_λ (nm):").grid(row=1, column=4, padx=5); ent_esig = ctk.CTkEntry(c2, width=70); ent_esig.grid(row=1, column=5)
+        res_ens = ctk.CTkLabel(c2, text="σ = -- ps", text_color="yellow"); res_ens.grid(row=2, column=0, columnspan=4, pady=10)
+        ctk.CTkButton(c2, text="Calcular", fg_color="#8d6e1f", hover_color="#6b5317", width=100, command=lambda: self.ejecutar_mod_a(MotorModuloA.ensanchamiento_total, res_ens, "σ = {:.2f} ps", ent_ed, ent_el, ent_esig)).grid(row=2, column=4, columnspan=2)
+
+        # Tarjeta 3: PMD
+        c3 = ctk.CTkFrame(scroll, corner_radius=10); c3.pack(fill="x", pady=10, ipady=5)
+        ctk.CTkLabel(c3, text="Dispersión por Modo de Polarización (PMD)", font=ctk.CTkFont(weight="bold")).grid(row=0, column=0, columnspan=3, pady=10)
+        ctk.CTkLabel(c3, text="D_PMD:").grid(row=1, column=0, padx=10); ent_dpmd = ctk.CTkEntry(c3); ent_dpmd.grid(row=1, column=1)
+        ctk.CTkLabel(c3, text="L (km):").grid(row=2, column=0, padx=10); ent_pl = ctk.CTkEntry(c3); ent_pl.grid(row=2, column=1, pady=5)
+        res_pmd = ctk.CTkLabel(c3, text="Δτ_PMD = --", text_color="yellow"); res_pmd.grid(row=1, column=2, rowspan=2, padx=20)
+        ctk.CTkButton(c3, text="Calcular", fg_color="#8d6e1f", hover_color="#6b5317", width=100, command=lambda: self.ejecutar_mod_a(MotorModuloA.dispersion_polarizacion_pmd, res_pmd, "Δτ_PMD = {:.4f}", ent_dpmd, ent_pl)).grid(row=1, column=3, rowspan=2)
+
+    def ejecutar_mod_a(self, func, lbl, formato, *entradas):
+        try:
+            valores = [float(e.get()) for e in entradas]
+            res = func(*valores)
+            lbl.configure(text=formato.format(res))
+        except ValueError as e:
+            messagebox.showerror("Error", str(e))
+        except Exception as e:
+            messagebox.showerror("Error", "Revisa que los campos no estén vacíos y contengan solo números.")
 
 if __name__ == "__main__":
     app = App()
