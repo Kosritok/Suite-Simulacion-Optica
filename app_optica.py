@@ -1,13 +1,20 @@
 import customtkinter as ctk
 from tkinter import messagebox
+import math
+
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+
 from motor_optico import MotorCalculoOptico
 from motor_modulo_a import MotorModuloA
+from motor_modulo_b import MotorModuloB
+from motor_grafico import MotorGrafico
 
 class App(ctk.CTk):
     def __init__(self):
         super().__init__()
         self.title("Suite de Simulación Electrónica y Óptica")
-        self.geometry("1350x850")  
+        self.geometry("1450x900")
         ctk.set_appearance_mode("dark")
         ctk.set_default_color_theme("blue")
         
@@ -38,7 +45,7 @@ class App(ctk.CTk):
         btn_font = ctk.CTkFont(size=14)
         ctk.CTkButton(self.frame_sub_base, text="📉 Atenuación", anchor="w", font=btn_font, fg_color="transparent", hover_color="gray30", command=self.vista_calculo_atenuacion).pack(fill="x", pady=2)
         ctk.CTkButton(self.frame_sub_base, text="🎯 Eficiencia", anchor="w", font=btn_font, fg_color="transparent", hover_color="gray30", command=self.vista_calculo_eficiencia).pack(fill="x", pady=2)
-        ctk.CTkButton(self.frame_sub_base, text="⚡ Power Budget", anchor="w", font=btn_font, fg_color="transparent", hover_color="gray30", command=self.vista_presupuesto_potencia).pack(fill="x", pady=2)
+        ctk.CTkButton(self.frame_sub_base, text="⚡ Presupuesto de Potencia", anchor="w", font=btn_font, fg_color="transparent", hover_color="gray30", command=self.vista_presupuesto_potencia).pack(fill="x", pady=2)
         ctk.CTkButton(self.frame_sub_base, text="✨ Rayleigh y Potencias", anchor="w", font=btn_font, fg_color="transparent", hover_color="gray30", command=self.vista_base_rayleigh).pack(fill="x", pady=2)
         ctk.CTkButton(self.frame_sub_base, text="🔄 Análisis Curvaturas", anchor="w", font=btn_font, fg_color="transparent", hover_color="gray30", command=self.vista_base_curvaturas).pack(fill="x", pady=2)
         ctk.CTkButton(self.frame_sub_base, text="📊 Modelos Estándar", anchor="w", font=btn_font, fg_color="transparent", hover_color="gray30", command=self.vista_base_modelos).pack(fill="x", pady=2)
@@ -53,9 +60,15 @@ class App(ctk.CTk):
         ctk.CTkButton(self.frame_sub_moda, text="🔢 Número V y Modos", anchor="w", font=btn_font, fg_color="transparent", hover_color="#6b5317", command=self.vista_moda_parametros).pack(fill="x", pady=2)
         ctk.CTkButton(self.frame_sub_moda, text="⏱️ Dispersión y Retardos", anchor="w", font=btn_font, fg_color="transparent", hover_color="#6b5317", command=self.vista_moda_dispersion).pack(fill="x", pady=2)
 
-        # --- MÓDULOS FUTUROS ---
-        ctk.CTkLabel(self.sidebar_frame, text="MÓDULOS FUTUROS", font=ctk.CTkFont(size=13, weight="bold"), text_color="gray").grid(row=6, column=0, padx=20, pady=(20, 5), sticky="w")
-        ctk.CTkButton(self.sidebar_frame, text="🔒 Módulo B", anchor="w", font=btn_font, state="disabled", fg_color="transparent").grid(row=7, column=0, padx=10, pady=(5, 20), sticky="ew")
+        # --- MOTOR MATEMÁTICO ---
+        self.menu_modb_visible = False
+        self.btn_toggle_modb = ctk.CTkButton(self.sidebar_frame, text="▶ Motor Matemático", anchor="w", font=ctk.CTkFont(size=15, weight="bold"), fg_color="transparent", hover_color="#1a5a40", text_color="#66bb6a", command=self.toggle_menu_modb)
+        self.btn_toggle_modb.grid(row=6, column=0, padx=10, pady=(15, 5), sticky="ew")
+
+        self.frame_sub_modb = ctk.CTkFrame(self.sidebar_frame, fg_color="transparent")
+        ctk.CTkButton(self.frame_sub_modb, text="🔢 Frecuencia y Modos", anchor="w", font=btn_font, fg_color="transparent", hover_color="#1a5a40", command=self.vista_modb_frecuencia).pack(fill="x", pady=2)
+        ctk.CTkButton(self.frame_sub_modb, text="✂️ Longitud de Corte", anchor="w", font=btn_font, fg_color="transparent", hover_color="#1a5a40", command=self.vista_modb_corte).pack(fill="x", pady=2)
+        ctk.CTkButton(self.frame_sub_modb, text="⭕ Campo Modal (MFD)", anchor="w", font=btn_font, fg_color="transparent", hover_color="#1a5a40", command=self.vista_modb_mfd).pack(fill="x", pady=2)
 
         # --- ÁREA PRINCIPAL ---
         self.main_frame = ctk.CTkFrame(self, fg_color="transparent")
@@ -63,7 +76,7 @@ class App(ctk.CTk):
         self.mostrar_inicio()
 
     # ==========================================
-    # FUNCIONES DE AYUDA Y UI DINÁMICA
+    # FUNCIONES DE AYUDA Y HERRAMIENTAS VISUALES
     # ==========================================
     def abrir_ayuda(self, concepto, definicion):
         ventana_ayuda = ctk.CTkToplevel(self)
@@ -74,7 +87,7 @@ class App(ctk.CTk):
         ctk.CTkLabel(ventana_ayuda, text=definicion, font=("Arial", 14), wraplength=450, justify="left").pack(padx=20, pady=10)
         
         ctk.CTkLabel(ventana_ayuda, 
-                     text="Para más información y derivación de fórmulas, consulte el libro:\nFiber Optic Communications por Gerd Keiser.", 
+                     text="Para más información y derivación de fórmulas, consulte el marco teórico.", 
                      text_color="gray", 
                      wraplength=400, 
                      justify="center", 
@@ -95,6 +108,30 @@ class App(ctk.CTk):
         ctk.CTkButton(parent, text="?", width=32, height=32, font=lbl_font, command=lambda: self.abrir_ayuda(help_title, help_desc)).grid(row=row, column=3, padx=10)
         return ent
 
+    def crear_tarjeta_dividida(self, padre):
+        """Crea la estructura de doble columna para gráficos adaptativos"""
+        card = ctk.CTkFrame(padre, corner_radius=10)
+        card.pack(fill="x", pady=10, ipady=5)
+        
+        panel_izquierdo = ctk.CTkFrame(card, fg_color="transparent")
+        panel_izquierdo.pack(side="left", fill="both", expand=True, padx=10, pady=10)
+        
+        panel_derecho = ctk.CTkFrame(card, fg_color="#212121", width=420)
+        panel_derecho.pack(side="right", fill="both", padx=10, pady=10)
+        panel_derecho.pack_propagate(False) 
+        
+        ctk.CTkLabel(panel_derecho, text="[ La gráfica adaptativa aparecerá aquí ]", text_color="gray").pack(expand=True)
+        return card, panel_izquierdo, panel_derecho
+
+    def mostrar_grafica(self, frame_destino, figura_matplotlib):
+        """Incrusta la gráfica de Matplotlib dentro del contenedor derecho"""
+        for widget in frame_destino.winfo_children():
+            widget.destroy()
+        canvas = FigureCanvasTkAgg(figura_matplotlib, master=frame_destino)
+        canvas.draw()
+        canvas.get_tk_widget().pack(fill="both", expand=True, padx=5, pady=5)
+        plt.close(figura_matplotlib)
+
     def limpiar_main_frame(self):
         for widget in self.main_frame.winfo_children():
             widget.destroy()
@@ -103,7 +140,7 @@ class App(ctk.CTk):
         self.limpiar_main_frame()
         ctk.CTkLabel(self.main_frame, text="Bienvenido a ÓpticaSuite Pro", font=ctk.CTkFont(size=34, weight="bold")).pack(pady=(50, 10))
         ctk.CTkLabel(self.main_frame, text="Selecciona un módulo en la barra lateral para comenzar.", text_color="gray", font=ctk.CTkFont(size=18)).pack(pady=10)
-        ctk.CTkLabel(self.main_frame, text="¡Deja un campo vacío para calcular su valor automáticamente!", text_color="#64b5f6", font=ctk.CTkFont(size=16)).pack(pady=5)
+        ctk.CTkLabel(self.main_frame, text="¡Deja un campo vacío en las tarjetas OMNI para calcular su valor automáticamente!", text_color="#64b5f6", font=ctk.CTkFont(size=16)).pack(pady=5)
 
     def crear_area_scroll(self, titulo, color="white"):
         self.limpiar_main_frame()
@@ -112,23 +149,48 @@ class App(ctk.CTk):
         scroll.pack(fill="both", expand=True)
         return scroll
 
+    # === ACORDEÓN LOGIC ===
     def toggle_menu_base(self):
         if not self.menu_base_visible:
             self.frame_sub_base.grid(row=3, column=0, sticky="ew", padx=15)
             self.btn_toggle_base.configure(text="▼ Motor de Atenuación")
             self.menu_base_visible = True
+            
             self.frame_sub_moda.grid_remove()
             self.btn_toggle_moda.configure(text="▶ Motor de Dispersión")
             self.menu_moda_visible = False
+            
+            self.frame_sub_modb.grid_remove()
+            self.btn_toggle_modb.configure(text="▶ Motor Matemático")
+            self.menu_modb_visible = False
 
     def toggle_menu_moda(self):
         if not self.menu_moda_visible:
             self.frame_sub_moda.grid(row=5, column=0, sticky="ew", padx=15)
             self.btn_toggle_moda.configure(text="▼ Motor de Dispersión")
             self.menu_moda_visible = True
+            
             self.frame_sub_base.grid_remove()
             self.btn_toggle_base.configure(text="▶ Motor de Atenuación")
             self.menu_base_visible = False
+            
+            self.frame_sub_modb.grid_remove()
+            self.btn_toggle_modb.configure(text="▶ Motor Matemático")
+            self.menu_modb_visible = False
+
+    def toggle_menu_modb(self):
+        if not self.menu_modb_visible:
+            self.frame_sub_modb.grid(row=7, column=0, sticky="ew", padx=15)
+            self.btn_toggle_modb.configure(text="▼ Motor Matemático")
+            self.menu_modb_visible = True
+            
+            self.frame_sub_base.grid_remove()
+            self.btn_toggle_base.configure(text="▶ Motor de Atenuación")
+            self.menu_base_visible = False
+            
+            self.frame_sub_moda.grid_remove()
+            self.btn_toggle_moda.configure(text="▶ Motor de Dispersión")
+            self.menu_moda_visible = False
 
     def ejecutar_calculo_tradicional(self, func, lbl, formato, *entradas):
         try:
@@ -142,17 +204,16 @@ class App(ctk.CTk):
     # VISTAS DEL MOTOR DE ATENUACIÓN
     # ==========================================
     def vista_calculo_atenuacion(self):
-        self.limpiar_main_frame()
-        ctk.CTkLabel(self.main_frame, text="📉 Cálculo de Atenuación", font=ctk.CTkFont(size=28, weight="bold")).pack(anchor="w", pady=(0, 10))
+        scroll = self.crear_area_scroll("📉 Cálculo de Atenuación")
+        card, p_izq, p_der = self.crear_tarjeta_dividida(scroll)
         
-        card = ctk.CTkFrame(self.main_frame, corner_radius=10); card.pack(fill="x", pady=10, ipady=10)
-        ctk.CTkLabel(card, text="⮀ OMNIDIRECCIONAL", font=ctk.CTkFont(size=16, weight="bold")).grid(row=0, column=0, columnspan=4, pady=(10, 0))
-        ctk.CTkLabel(card, text="Deja exactamente UN campo vacío para resolver la ecuación.", text_color="#64b5f6", font=ctk.CTkFont(size=13)).grid(row=1, column=0, columnspan=4, pady=(0, 10))
+        ctk.CTkLabel(p_izq, text="⮀ OMNIDIRECCIONAL", font=ctk.CTkFont(size=16, weight="bold")).grid(row=0, column=0, columnspan=4, pady=(10, 0))
+        ctk.CTkLabel(p_izq, text="Deja exactamente UN campo vacío para resolver la ecuación.", text_color="#64b5f6", font=ctk.CTkFont(size=13)).grid(row=1, column=0, columnspan=4, pady=(0, 10))
 
-        ent_pin = self.crear_fila_input(card, 2, "Potencia (Pᵢₙ):", "Ej. 1.0", "[mW]", "[Típico: 0.1 a 10]", "Potencia de Entrada (P_in)", "Nivel de potencia óptica inyectada por la fuente transmisora al inicio del enlace de fibra.")
-        ent_pout = self.crear_fila_input(card, 3, "Potencia (Pₒᵤₜ):", "Ej. 0.5", "[mW]", "[Debe ser < Pᵢₙ]", "Potencia de Salida (P_out)", "Nivel de potencia óptica medida al final del tramo atenuado.")
-        ent_z = self.crear_fila_input(card, 4, "Distancia (z):", "Ej. 20.0", "[km]", "[Típico: 1 a 100]", "Distancia del Enlace (z)", "Longitud física total del cable de fibra óptica a través del cual viaja la señal luminosa.")
-        ent_alpha = self.crear_fila_input(card, 5, "Atenuación (α):", "Ej. 0.25", "[dB/km]", "[Típico: 0.2 a 3.0]", "Coeficiente de Atenuación (α)", "Pérdida de potencia intrínseca del material, medida por cada kilómetro recorrido.")
+        ent_pin = self.crear_fila_input(p_izq, 2, "Potencia (Pᵢₙ):", "Ej. 1.0", "[mW]", "[Típico: 0.1 a 10]", "Potencia de Entrada (P_in)", "Nivel de potencia óptica inyectada por la fuente transmisora al inicio del enlace de fibra.")
+        ent_pout = self.crear_fila_input(p_izq, 3, "Potencia (Pₒᵤₜ):", "Ej. 0.5", "[mW]", "[Debe ser < Pᵢₙ]", "Potencia de Salida (P_out)", "Nivel de potencia óptica medida al final del tramo atenuado.")
+        ent_z = self.crear_fila_input(p_izq, 4, "Distancia (z):", "Ej. 20.0", "[km]", "[Típico: 1 a 100]", "Distancia del Enlace (z)", "Longitud física total del cable de fibra óptica a través del cual viaja la señal luminosa.")
+        ent_alpha = self.crear_fila_input(p_izq, 5, "Atenuación (α):", "Ej. 0.25", "[dB/km]", "[Típico: 0.2 a 3.0]", "Coeficiente de Atenuación (α)", "Pérdida de potencia intrínseca del material, medida por cada kilómetro recorrido.")
 
         def resolver_atenuacion():
             ents = {"pin": ent_pin, "pout": ent_pout, "z": ent_z, "alpha": ent_alpha}
@@ -167,24 +228,27 @@ class App(ctk.CTk):
                 elif inc == "pin": res = MotorCalculoOptico.calcular_potencia_entrada(llenos["pout"], llenos["alpha"], llenos["z"])
                 elif inc == "z": res = MotorCalculoOptico.calcular_distancia_atenuacion(llenos["pin"], llenos["pout"], llenos["alpha"])
                 ents[inc].delete(0, 'end'); ents[inc].insert(0, f"{res:.4f}")
+                
+                # Gráfica
+                fig = MotorGrafico.plot_atenuacion(float(ent_pin.get()), float(ent_alpha.get()), float(ent_z.get()))
+                self.mostrar_grafica(p_der, fig)
             except Exception as e: messagebox.showerror("Error", str(e))
 
-        ctk.CTkButton(card, text="Resolver Variable", font=ctk.CTkFont(size=15, weight="bold"), width=180, height=36, command=resolver_atenuacion).grid(row=6, column=0, columnspan=4, pady=15)
+        ctk.CTkButton(p_izq, text="Resolver y Graficar", font=ctk.CTkFont(size=15, weight="bold"), width=180, height=36, command=resolver_atenuacion).grid(row=6, column=0, columnspan=4, pady=15)
 
     def vista_presupuesto_potencia(self):
-        self.limpiar_main_frame()
-        ctk.CTkLabel(self.main_frame, text="⚡ Presupuesto de Potencia", font=ctk.CTkFont(size=28, weight="bold")).pack(anchor="w", pady=(0, 10))
+        scroll = self.crear_area_scroll("⚡ Presupuesto de Potencia")
+        card, p_izq, p_der = self.crear_tarjeta_dividida(scroll)
         
-        card = ctk.CTkFrame(self.main_frame, corner_radius=10); card.pack(fill="x", pady=10)
-        ctk.CTkLabel(card, text="⮀ OMNIDIRECCIONAL", font=ctk.CTkFont(size=16, weight="bold")).grid(row=0, column=0, columnspan=4, pady=(10, 0))
-        ctk.CTkLabel(card, text="Deja exactamente UN campo vacío para resolver la ecuación.", text_color="#64b5f6", font=ctk.CTkFont(size=13)).grid(row=1, column=0, columnspan=4, pady=(0, 10))
+        ctk.CTkLabel(p_izq, text="⮀ OMNIDIRECCIONAL", font=ctk.CTkFont(size=16, weight="bold")).grid(row=0, column=0, columnspan=4, pady=(10, 0))
+        ctk.CTkLabel(p_izq, text="Deja exactamente UN campo vacío para resolver la ecuación.", text_color="#64b5f6", font=ctk.CTkFont(size=13)).grid(row=1, column=0, columnspan=4, pady=(0, 10))
 
-        ent_tx = self.crear_fila_input(card, 2, "Potencia Tx:", "Ej. 3.0", "[dBm]", "[Típico: -10 a 5]", "Potencia de Transmisión (Tx)", "Potencia media acoplada a la fibra óptica por el emisor electrónico (Láser o LED).")
-        ent_rx = self.crear_fila_input(card, 3, "Sensibilidad Rx:", "Ej. -32.0", "[dBm]", "[Típico: -40 a -20]", "Sensibilidad de Recepción (Rx)", "Potencia mínima requerida por el fotodetector receptor para interpretar los datos sin errores perceptibles.")
-        ent_cab = self.crear_fila_input(card, 4, "Pérdida Cable:", "Ej. 15.0", "[dB]", "[Típico: 0 a 30]", "Pérdida Total del Cable", "Suma completa de la atenuación distribuida a lo largo de toda la longitud física de la fibra.")
-        ent_emp = self.crear_fila_input(card, 5, "Empalmes:", "Ej. 1.0", "[dB]", "[Típico: 0.1 a 0.5 c/u]", "Pérdidas por Empalmes", "Suma de las caídas de potencia ocasionadas por uniones permanentes en la fibra (fusión térmica).")
-        ent_con = self.crear_fila_input(card, 6, "Conectores:", "Ej. 2.0", "[dB]", "[Típico: 0.5 a 2.0 c/u]", "Pérdidas por Conectores", "Suma de atenuaciones generadas en todas las uniones mecánicas acopladas y desacoplables del sistema.")
-        ent_mar = self.crear_fila_input(card, 7, "Margen Sistema:", "Ej. 5.0", "[dB]", "[Seguridad > 3]", "Margen de Seguridad Operativo", "Reserva estática de potencia guardada explícitamente para compensar el envejecimiento futuro de los componentes.")
+        ent_tx = self.crear_fila_input(p_izq, 2, "Potencia Tx:", "Ej. 3.0", "[dBm]", "[Típico: -10 a 5]", "Potencia de Transmisión (Tx)", "Potencia media acoplada a la fibra óptica por el emisor electrónico (Láser o LED).")
+        ent_rx = self.crear_fila_input(p_izq, 3, "Sensibilidad Rx:", "Ej. -32.0", "[dBm]", "[Típico: -40 a -20]", "Sensibilidad de Recepción (Rx)", "Potencia mínima requerida por el fotodetector receptor para interpretar los datos sin errores perceptibles.")
+        ent_cab = self.crear_fila_input(p_izq, 4, "Pérdida Cable:", "Ej. 15.0", "[dB]", "[Típico: 0 a 30]", "Pérdida Total del Cable", "Suma completa de la atenuación distribuida a lo largo de toda la longitud física de la fibra.")
+        ent_emp = self.crear_fila_input(p_izq, 5, "Empalmes:", "Ej. 1.0", "[dB]", "[Típico: 0.1 a 0.5 c/u]", "Pérdidas por Empalmes", "Suma de las caídas de potencia ocasionadas por uniones permanentes en la fibra (fusión térmica).")
+        ent_con = self.crear_fila_input(p_izq, 6, "Conectores:", "Ej. 2.0", "[dB]", "[Típico: 0.5 a 2.0 c/u]", "Pérdidas por Conectores", "Suma de atenuaciones generadas en todas las uniones mecánicas acopladas y desacoplables del sistema.")
+        ent_mar = self.crear_fila_input(p_izq, 7, "Margen Sistema:", "Ej. 5.0", "[dB]", "[Seguridad > 3]", "Margen de Seguridad Operativo", "Reserva estática de potencia guardada explícitamente para compensar el envejecimiento futuro de los componentes.")
 
         def resolver_potencia():
             ents = {"tx": ent_tx, "rx": ent_rx, "cab": ent_cab, "emp": ent_emp, "con": ent_con, "mar": ent_mar}
@@ -201,9 +265,13 @@ class App(ctk.CTk):
                 elif inc == "emp": res = llenos["tx"] - llenos["rx"] - llenos["mar"] - llenos["cab"] - llenos["con"]
                 elif inc == "con": res = llenos["tx"] - llenos["rx"] - llenos["mar"] - llenos["cab"] - llenos["emp"]
                 ents[inc].delete(0, 'end'); ents[inc].insert(0, f"{res:.2f}")
+                
+                # Gráfica
+                fig = MotorGrafico.plot_presupuesto(float(ent_tx.get()), float(ent_rx.get()), float(ent_cab.get()), float(ent_emp.get()), float(ent_con.get()))
+                self.mostrar_grafica(p_der, fig)
             except Exception as e: messagebox.showerror("Error", str(e))
 
-        ctk.CTkButton(card, text="Resolver Variable", font=ctk.CTkFont(size=15, weight="bold"), width=180, height=36, command=resolver_potencia).grid(row=8, column=0, columnspan=4, pady=15)
+        ctk.CTkButton(p_izq, text="Resolver y Graficar", font=ctk.CTkFont(size=15, weight="bold"), width=180, height=36, command=resolver_potencia).grid(row=8, column=0, columnspan=4, pady=15)
 
     def vista_calculo_eficiencia(self):
         self.limpiar_main_frame()
@@ -222,17 +290,26 @@ class App(ctk.CTk):
 
     def vista_base_rayleigh(self):
         scroll = self.crear_area_scroll("✨ Rayleigh y Predicción de Potencias")
-        c1 = ctk.CTkFrame(scroll, corner_radius=10); c1.pack(fill="x", pady=10, ipady=5)
-        ctk.CTkLabel(c1, text="➔ TRADICIONAL", font=ctk.CTkFont(size=16, weight="bold")).grid(row=0, column=0, columnspan=4, pady=(10, 0))
-        ctk.CTkLabel(c1, text="Llena TODOS los campos para calcular el resultado final.", text_color="#9e9e9e", font=ctk.CTkFont(size=13)).grid(row=1, column=0, columnspan=4, pady=(0, 10))
-
-        ent_n = self.crear_fila_input(c1, 2, "Índice Núcleo (n):", "Ej. 1.46", "[Adim]", "[Típico: 1.44 a 1.48]", "Índice de Refracción", "Índice de refracción estático del material dopado base que constituye el núcleo de la fibra.")
-        ent_bt = self.crear_fila_input(c1, 3, "Compresibilidad (βₜ):", "Ej. 7e-11", "[cm²/dina]", "[Típico: ~7e-11]", "Compresibilidad Isotérmica", "Característica térmica que define cómo responde estructuralmente el volumen del vidrio cuando está sometido a presión constante.")
-        ent_tf = self.crear_fila_input(c1, 4, "Temp. Fusión (T_f):", "Ej. 1673", "[K]", "[Típico: 1400 a 1700]", "Temperatura de Fusión/Ficticia", "Registro de la temperatura límite en la cual la sílice derretida de fábrica se cristaliza, encapsulando impurezas.")
-        ent_lnm = self.crear_fila_input(c1, 5, "Longitud Onda (λ):", "Ej. 850.0", "[nm]", "[Típico: 850, 1310, 1550]", "Longitud de Onda de Operación", "Punto específico en el espectro electromagnético en el que operará la señal óptica introducida.")
+        card, p_izq, p_der = self.crear_tarjeta_dividida(scroll)
         
-        res_r = ctk.CTkLabel(c1, text="α_Rayleigh = -- dB/km", font=ctk.CTkFont(size=18, weight="bold")); res_r.grid(row=6, column=0, columnspan=4, pady=5)
-        ctk.CTkButton(c1, text="Calcular Rayleigh", font=ctk.CTkFont(size=15, weight="bold"), width=180, height=36, command=lambda: self.ejecutar_calculo_tradicional(MotorCalculoOptico.atenuacion_rayleigh_eq37, res_r, "α_Rayleigh = {:.4f} dB/km", ent_n, ent_bt, ent_tf, ent_lnm)).grid(row=7, column=0, columnspan=4, pady=10)
+        ctk.CTkLabel(p_izq, text="➔ TRADICIONAL", font=ctk.CTkFont(size=16, weight="bold")).grid(row=0, column=0, columnspan=4, pady=(10, 0))
+        ctk.CTkLabel(p_izq, text="Llena TODOS los campos para calcular el resultado final.", text_color="#9e9e9e", font=ctk.CTkFont(size=13)).grid(row=1, column=0, columnspan=4, pady=(0, 10))
+
+        ent_n = self.crear_fila_input(p_izq, 2, "Índice Núcleo (n):", "Ej. 1.46", "[Adim]", "[Típico: 1.44 a 1.48]", "Índice de Refracción", "Índice de refracción estático del material dopado base que constituye el núcleo de la fibra.")
+        ent_bt = self.crear_fila_input(p_izq, 3, "Compresibilidad (βₜ):", "Ej. 7e-11", "[cm²/dina]", "[Típico: ~7e-11]", "Compresibilidad Isotérmica", "Característica térmica que define cómo responde estructuralmente el volumen del vidrio cuando está sometido a presión constante.")
+        ent_tf = self.crear_fila_input(p_izq, 4, "Temp. Fusión (T_f):", "Ej. 1673", "[K]", "[Típico: 1400 a 1700]", "Temperatura de Fusión/Ficticia", "Registro de la temperatura límite en la cual la sílice derretida de fábrica se cristaliza, encapsulando impurezas.")
+        ent_lnm = self.crear_fila_input(p_izq, 5, "Longitud Onda (λ):", "Ej. 850.0", "[nm]", "[Típico: 850, 1310, 1550]", "Longitud de Onda de Operación", "Punto específico en el espectro electromagnético en el que operará la señal óptica introducida.")
+        
+        res_r = ctk.CTkLabel(p_izq, text="α_Rayleigh = -- dB/km", font=ctk.CTkFont(size=18, weight="bold")); res_r.grid(row=6, column=0, columnspan=4, pady=5)
+        
+        def calc_rayleigh():
+            try:
+                self.ejecutar_calculo_tradicional(MotorCalculoOptico.atenuacion_rayleigh_eq37, res_r, "α_Rayleigh = {:.4f} dB/km", ent_n, ent_bt, ent_tf, ent_lnm)
+                fig = MotorGrafico.plot_rayleigh(float(ent_lnm.get()))
+                self.mostrar_grafica(p_der, fig)
+            except Exception as e: pass
+
+        ctk.CTkButton(p_izq, text="Calcular y Graficar", font=ctk.CTkFont(size=15, weight="bold"), width=180, height=36, command=calc_rayleigh).grid(row=7, column=0, columnspan=4, pady=10)
 
     def vista_base_curvaturas(self):
         scroll = self.crear_area_scroll("🔄 Análisis Macro y Microcurvaturas")
@@ -269,16 +346,24 @@ class App(ctk.CTk):
         scroll = self.crear_area_scroll("📊 Modelos y Dispersión Homologada")
         
         # Tarjeta 1: G.652
-        c1 = ctk.CTkFrame(scroll, corner_radius=10); c1.pack(fill="x", pady=10, ipady=5)
-        ctk.CTkLabel(c1, text="Dispersión G.652 ➔ TRADICIONAL", font=ctk.CTkFont(size=16, weight="bold")).grid(row=0, column=0, columnspan=4, pady=(10, 0))
-        ctk.CTkLabel(c1, text="Llena TODOS los campos para calcular el resultado final.", text_color="#9e9e9e", font=ctk.CTkFont(size=13)).grid(row=1, column=0, columnspan=4, pady=(0, 10))
+        card1, p_izq, p_der = self.crear_tarjeta_dividida(scroll)
+        ctk.CTkLabel(p_izq, text="Dispersión G.652 ➔ TRADICIONAL", font=ctk.CTkFont(size=16, weight="bold")).grid(row=0, column=0, columnspan=4, pady=(10, 0))
+        ctk.CTkLabel(p_izq, text="Llena TODOS los campos para calcular el resultado final.", text_color="#9e9e9e", font=ctk.CTkFont(size=13)).grid(row=1, column=0, columnspan=4, pady=(0, 10))
 
-        ent_l = self.crear_fila_input(c1, 2, "Longitud Onda (λ):", "Ej. 1550.0", "[nm]", "[Típico: 1200 a 1600]", "Longitud de Onda Transmitida", "Punto específico en el espectro bajo el cual se realizará el análisis de dispersión actual.")
-        ent_l0 = self.crear_fila_input(c1, 3, "Dispersión Cero (λ₀):", "Ej. 1310.0", "[nm]", "[Típico: 1300 a 1324]", "Longitud de Onda de Dispersión Nula", "Valor estandarizado comercialmente en la fibra donde la curva de distorsión total intersecta el punto neutro cero.")
-        ent_s0 = self.crear_fila_input(c1, 4, "Pendiente Cero (S₀):", "Ej. 0.092", "[ps/(nm²·km)]", "[Típico: 0.08 a 0.095]", "Pendiente de Dispersión Cero", "Magnitud geométrica que registra el grado de inclinación ascendente en la curva de atenuación justo en la zona neutral λ₀.")
+        ent_l = self.crear_fila_input(p_izq, 2, "Longitud Onda (λ):", "Ej. 1550.0", "[nm]", "[Típico: 1200 a 1600]", "Longitud de Onda Transmitida", "Punto específico en el espectro bajo el cual se realizará el análisis de dispersión actual.")
+        ent_l0 = self.crear_fila_input(p_izq, 3, "Dispersión Cero (λ₀):", "Ej. 1310.0", "[nm]", "[Típico: 1300 a 1324]", "Longitud de Onda de Dispersión Nula", "Valor estandarizado comercialmente en la fibra donde la curva de distorsión total intersecta el punto neutro cero.")
+        ent_s0 = self.crear_fila_input(p_izq, 4, "Pendiente Cero (S₀):", "Ej. 0.092", "[ps/(nm²·km)]", "[Típico: 0.08 a 0.095]", "Pendiente de Dispersión Cero", "Magnitud geométrica que registra el grado de inclinación ascendente en la curva de atenuación justo en la zona neutral λ₀.")
         
-        res_g652 = ctk.CTkLabel(c1, text="D(λ) = -- ps/(nm·km)", font=ctk.CTkFont(size=18, weight="bold")); res_g652.grid(row=5, column=0, columnspan=4, pady=5)
-        ctk.CTkButton(c1, text="Calcular Coeficiente D", font=ctk.CTkFont(size=15, weight="bold"), width=180, height=36, command=lambda: self.ejecutar_calculo_tradicional(MotorCalculoOptico.calc_317_dispersion_g652, res_g652, "D(λ) = {:.4f} ps/(nm·km)", ent_l, ent_l0, ent_s0)).grid(row=6, column=0, columnspan=4, pady=10)
+        res_g652 = ctk.CTkLabel(p_izq, text="D(λ) = -- ps/(nm·km)", font=ctk.CTkFont(size=18, weight="bold")); res_g652.grid(row=5, column=0, columnspan=4, pady=5)
+        
+        def calc_g652():
+            try:
+                self.ejecutar_calculo_tradicional(MotorCalculoOptico.calc_317_dispersion_g652, res_g652, "D(λ) = {:.4f} ps/(nm·km)", ent_l, ent_l0, ent_s0)
+                fig = MotorGrafico.plot_g652(float(ent_l0.get()), float(ent_s0.get()))
+                self.mostrar_grafica(p_der, fig)
+            except Exception as e: pass
+
+        ctk.CTkButton(p_izq, text="Calcular y Graficar D", font=ctk.CTkFont(size=15, weight="bold"), width=180, height=36, command=calc_g652).grid(row=6, column=0, columnspan=4, pady=10)
 
         # Tarjeta 2: Sellmeier
         c2 = ctk.CTkFrame(scroll, corner_radius=10); c2.pack(fill="x", pady=10, ipady=5)
@@ -321,14 +406,14 @@ class App(ctk.CTk):
         ctk.CTkButton(c1, text="Resolver Variables n/v", fg_color="#8d6e1f", hover_color="#6b5317", font=ctk.CTkFont(size=15, weight="bold"), width=180, height=36, command=resolver_n_v).grid(row=4, column=0, columnspan=4, pady=10)
 
         # Tarjeta 2: Snell
-        c2 = ctk.CTkFrame(scroll, corner_radius=10); c2.pack(fill="x", pady=10, ipady=5)
-        ctk.CTkLabel(c2, text="Ley de Snell (Refracción) ⮀ OMNIDIRECCIONAL", font=ctk.CTkFont(size=16, weight="bold")).grid(row=0, column=0, columnspan=4, pady=(10, 0))
-        ctk.CTkLabel(c2, text="Deja exactamente UN campo vacío para resolver la ecuación.", text_color="#64b5f6", font=ctk.CTkFont(size=13)).grid(row=1, column=0, columnspan=4, pady=(0, 10))
+        card2, p_izq, p_der = self.crear_tarjeta_dividida(scroll)
+        ctk.CTkLabel(p_izq, text="Ley de Snell (Refracción) ⮀ OMNIDIRECCIONAL", font=ctk.CTkFont(size=16, weight="bold")).grid(row=0, column=0, columnspan=4, pady=(10, 0))
+        ctk.CTkLabel(p_izq, text="Deja exactamente UN campo vacío para resolver la ecuación.", text_color="#64b5f6", font=ctk.CTkFont(size=13)).grid(row=1, column=0, columnspan=4, pady=(0, 10))
         
-        ent_sn1 = self.crear_fila_input(c2, 2, "Índice Origen (n₁):", "Ej. 1.48", "[Medio 1]", "[Típico: 1.44 a 1.48]", "Índice de Zona Transmisora", "Propiedad óptica del componente estructural del cual están originándose y saliendo los vectores iniciales de la luz.")
-        ent_sn2 = self.crear_fila_input(c2, 3, "Índice Destino (n₂):", "Ej. 1.46", "[Medio 2]", "[Típico: 1.0 a 1.48]", "Índice de Zona Receptora", "Propiedad del medio estructural secundario que interceptará a los haces lumínicos tras el cruce de frontera óptica.")
-        ent_th1 = self.crear_fila_input(c2, 4, "Áng. Incidencia (θ₁):", "Ej. 30.0", "[Grados °]", "[0 a 90 °]", "Ángulo de Choque (Incidencia)", "Inclinación originada desde la trayectoria del vector fotónico con respecto a la directriz imaginaria perpendicular (Normal) de la frontera.")
-        ent_th2 = self.crear_fila_input(c2, 5, "Áng. Refracción (θ₂):", "Ej. 45.0", "[Grados °]", "[0 a 90 °]", "Ángulo de Desviación", "Dirección definitiva a la cual logrará acomodarse la luz interna una vez invadido de lleno la composición espacial del segundo medio.")
+        ent_sn1 = self.crear_fila_input(p_izq, 2, "Índice Origen (n₁):", "Ej. 1.48", "[Medio 1]", "[Típico: 1.44 a 1.48]", "Índice de Zona Transmisora", "Propiedad óptica del componente estructural del cual están originándose y saliendo los vectores iniciales de la luz.")
+        ent_sn2 = self.crear_fila_input(p_izq, 3, "Índice Destino (n₂):", "Ej. 1.46", "[Medio 2]", "[Típico: 1.0 a 1.48]", "Índice de Zona Receptora", "Propiedad del medio estructural secundario que interceptará a los haces lumínicos tras el cruce de frontera óptica.")
+        ent_th1 = self.crear_fila_input(p_izq, 4, "Áng. Incidencia (θ₁):", "Ej. 30.0", "[Grados °]", "[0 a 90 °]", "Ángulo de Choque (Incidencia)", "Inclinación originada desde la trayectoria del vector fotónico con respecto a la directriz imaginaria perpendicular (Normal) de la frontera.")
+        ent_th2 = self.crear_fila_input(p_izq, 5, "Áng. Refracción (θ₂):", "Ej. 45.0", "[Grados °]", "[0 a 90 °]", "Ángulo de Desviación", "Dirección definitiva a la cual logrará acomodarse la luz interna una vez invadido de lleno la composición espacial del segundo medio.")
 
         def resolver_snell():
             ents = {"n1": ent_sn1, "n2": ent_sn2, "th1": ent_th1, "th2": ent_th2}
@@ -342,9 +427,12 @@ class App(ctk.CTk):
                 elif inc == "n1": res = MotorModuloA.snell_inverso_n1(llenos["n2"], llenos["th1"], llenos["th2"])
                 elif inc == "n2": res = MotorModuloA.snell_inverso_n2(llenos["n1"], llenos["th1"], llenos["th2"])
                 ents[inc].delete(0, 'end'); ents[inc].insert(0, f"{res:.4f}")
+                
+                fig = MotorGrafico.plot_snell(float(ent_sn1.get()), float(ent_sn2.get()), float(ent_th1.get()), float(ent_th2.get()))
+                self.mostrar_grafica(p_der, fig)
             except Exception as e: messagebox.showerror("Error", str(e))
 
-        ctk.CTkButton(c2, text="Resolver Snell", fg_color="#8d6e1f", hover_color="#6b5317", font=ctk.CTkFont(size=15, weight="bold"), width=180, height=36, command=resolver_snell).grid(row=6, column=0, columnspan=4, pady=10)
+        ctk.CTkButton(p_izq, text="Resolver y Dibujar Snell", fg_color="#8d6e1f", hover_color="#6b5317", font=ctk.CTkFont(size=15, weight="bold"), width=180, height=36, command=resolver_snell).grid(row=6, column=0, columnspan=4, pady=10)
 
         # Tarjeta 3: Parámetros del Núcleo (Tradicional)
         c3 = ctk.CTkFrame(scroll, corner_radius=10); c3.pack(fill="x", pady=10, ipady=5)
@@ -370,17 +458,17 @@ class App(ctk.CTk):
     def vista_moda_parametros(self):
         scroll = self.crear_area_scroll("🔢 Número V y Modos", color="#d4af37")
         
-        c1 = ctk.CTkFrame(scroll, corner_radius=10); c1.pack(fill="x", pady=10, ipady=5)
-        ctk.CTkLabel(c1, text="Frecuencia Normalizada ⮀ OMNIDIRECCIONAL", font=ctk.CTkFont(size=16, weight="bold")).grid(row=0, column=0, columnspan=4, pady=(10, 0))
-        ctk.CTkLabel(c1, text="Deja UN campo vacío (entre Radio, Longitud, NA o V) para despejar.", text_color="#64b5f6", font=ctk.CTkFont(size=13)).grid(row=1, column=0, columnspan=4, pady=(0, 10))
+        card1, p_izq, p_der = self.crear_tarjeta_dividida(scroll)
+        ctk.CTkLabel(p_izq, text="Frecuencia Normalizada ⮀ OMNIDIRECCIONAL", font=ctk.CTkFont(size=16, weight="bold")).grid(row=0, column=0, columnspan=4, pady=(10, 0))
+        ctk.CTkLabel(p_izq, text="Deja UN campo vacío (entre Radio, Longitud, NA o V) para despejar.", text_color="#64b5f6", font=ctk.CTkFont(size=13)).grid(row=1, column=0, columnspan=4, pady=(0, 10))
 
-        ent_a = self.crear_fila_input(c1, 2, "Radio Núcleo (a):", "Ej. 25.0", "[µm]", "[Típico: 4 a 50]", "Radio Esférico Interno", "Cuantificación transversal desde el eje del núcleo hasta el contorno inmediato, vital para fijar el nivel de capacidad portadora.")
-        ent_lam = self.crear_fila_input(c1, 3, "Longitud Onda (λ):", "Ej. 1.3", "[µm]", "[Típico: 0.85 a 1.55]", "Longitud de Espectro Óptico", "Caracterización electromagnética del tamaño del ciclo de la señal de luz de origen, evaluado fundamentalmente en micrómetros.")
-        ent_na = self.crear_fila_input(c1, 4, "Apertura Num. (NA):", "Ej. 0.22", "[Adim]", "[Típico: 0.1 a 0.3]", "Apertura Numérica (NA)", "Determinante fundamental y unívoco rigiendo de forma total la entrada y aceptación máxima de haces permisibles desde espacios vacíos.")
-        ent_v = self.crear_fila_input(c1, 5, "Número V:", "Ej. 2.4", "[Adim]", "[Monomodo < 2.405]", "Frecuencia Espacial Normalizada", "Cifra adimensional definitoria. Señala inexorablemente si las propiedades compuestas permitirán uno solo, pocos o miles de carriles superpuestos simultáneos.")
-        ent_alf = self.crear_fila_input(c1, 6, "Perfil Índice (α):", "Ej. 2.0", "[Opcional]", "[Gradual=2]", "Pendiente de Graduación", "Define el escalonamiento de manufactura que modela en la práctica la forma en la que cae o se eleva el índice de las capas de núcleo parabólico.")
+        ent_a = self.crear_fila_input(p_izq, 2, "Radio Núcleo (a):", "Ej. 25.0", "[µm]", "[Típico: 4 a 50]", "Radio Esférico Interno", "Cuantificación transversal desde el eje del núcleo hasta el contorno inmediato, vital para fijar el nivel de capacidad portadora.")
+        ent_lam = self.crear_fila_input(p_izq, 3, "Longitud Onda (λ):", "Ej. 1.3", "[µm]", "[Típico: 0.85 a 1.55]", "Longitud de Espectro Óptico", "Caracterización electromagnética del tamaño del ciclo de la señal de luz de origen, evaluado fundamentalmente en micrómetros.")
+        ent_na = self.crear_fila_input(p_izq, 4, "Apertura Num. (NA):", "Ej. 0.22", "[Adim]", "[Típico: 0.1 a 0.3]", "Apertura Numérica (NA)", "Determinante fundamental y unívoco rigiendo de forma total la entrada y aceptación máxima de haces permisibles desde espacios vacíos.")
+        ent_v = self.crear_fila_input(p_izq, 5, "Número V:", "Ej. 2.4", "[Adim]", "[Monomodo < 2.405]", "Frecuencia Espacial Normalizada", "Cifra adimensional definitoria. Señala inexorablemente si las propiedades compuestas permitirán uno solo, pocos o miles de carriles superpuestos simultáneos.")
+        ent_alf = self.crear_fila_input(p_izq, 6, "Perfil Índice (α):", "Ej. 2.0", "[Opcional]", "[Gradual=2]", "Pendiente de Graduación", "Define el escalonamiento de manufactura que modela en la práctica la forma en la que cae o se eleva el índice de las capas de núcleo parabólico.")
         
-        res_modos = ctk.CTkLabel(c1, text="Modos Guiados: --", text_color="yellow", font=ctk.CTkFont(size=18, weight="bold")); res_modos.grid(row=7, column=0, columnspan=4, pady=5)
+        res_modos = ctk.CTkLabel(p_izq, text="Modos Guiados: --", text_color="yellow", font=ctk.CTkFont(size=18, weight="bold")); res_modos.grid(row=7, column=0, columnspan=4, pady=5)
         
         def resolver_v():
             ents = {"a": ent_a, "lam": ent_lam, "na": ent_na, "v": ent_v}
@@ -401,9 +489,12 @@ class App(ctk.CTk):
                 m_esc = MotorModuloA.modos_guiados_escalonado(v_final)
                 m_grad = MotorModuloA.modos_guiados_gradual(v_final, float(ent_alf.get())) if ent_alf.get() else "--"
                 res_modos.configure(text=f"Modos Escalonados: {m_esc} | Graduales: {m_grad}")
+                
+                fig = MotorGrafico.plot_numero_v(float(ent_a.get()), float(ent_lam.get()), float(ent_na.get()))
+                self.mostrar_grafica(p_der, fig)
             except Exception as e: messagebox.showerror("Error", str(e))
             
-        ctk.CTkButton(c1, text="Resolver Ecuación V", fg_color="#8d6e1f", hover_color="#6b5317", font=ctk.CTkFont(size=15, weight="bold"), width=180, height=36, command=resolver_v).grid(row=8, column=0, columnspan=4, pady=10)
+        ctk.CTkButton(p_izq, text="Resolver y Graficar V", fg_color="#8d6e1f", hover_color="#6b5317", font=ctk.CTkFont(size=15, weight="bold"), width=180, height=36, command=resolver_v).grid(row=8, column=0, columnspan=4, pady=10)
 
     def vista_moda_dispersion(self):
         scroll = self.crear_area_scroll("⏱️ Dispersión y Retardos", color="#d4af37")
@@ -436,16 +527,25 @@ class App(ctk.CTk):
         ctk.CTkButton(c1, text="Resolver Retardo", fg_color="#8d6e1f", hover_color="#6b5317", font=ctk.CTkFont(size=15, weight="bold"), width=180, height=36, command=resolver_retardo).grid(row=7, column=0, columnspan=4, pady=10)
 
         # Tarjeta 2: Ensanchamiento Total (Tradicional)
-        c2 = ctk.CTkFrame(scroll, corner_radius=10); c2.pack(fill="x", pady=10, ipady=5)
-        ctk.CTkLabel(c2, text="Ensanchamiento Total (Dispersión Cromática) ➔ TRADICIONAL", font=ctk.CTkFont(size=16, weight="bold")).grid(row=0, column=0, columnspan=4, pady=(10, 0))
-        ctk.CTkLabel(c2, text="Llena TODOS los campos para calcular el resultado final.", text_color="#9e9e9e", font=ctk.CTkFont(size=13)).grid(row=1, column=0, columnspan=4, pady=(0, 10))
+        card2, p_izq, p_der = self.crear_tarjeta_dividida(scroll)
+        ctk.CTkLabel(p_izq, text="Ensanchamiento Total (Dispersión Cromática) ➔ TRADICIONAL", font=ctk.CTkFont(size=16, weight="bold")).grid(row=0, column=0, columnspan=4, pady=(10, 0))
+        ctk.CTkLabel(p_izq, text="Llena TODOS los campos para calcular el resultado final.", text_color="#9e9e9e", font=ctk.CTkFont(size=13)).grid(row=1, column=0, columnspan=4, pady=(0, 10))
 
-        ent_ed = self.crear_fila_input(c2, 2, "Coef. Dispersión (D):", "Ej. 17.0", "[ps/(nm·km)]", "[Típico: 15 a 18]", "Coeficiente Empírico Cromático", "Tasación volumétrica informando cuántos picosegundos ensanchará el destello el sistema en base al kilómetro superado y las frecuencias espectrales emitidas en conjunto.")
-        ent_el = self.crear_fila_input(c2, 3, "Longitud (L):", "Ej. 50.0", "[km]", "[Típico: 1 a 100]", "Alcance Completo de Red", "Recorrido logístico del conducto principal, determinante primordial multiplicativo directo de los retardos del material.")
-        ent_esig = self.crear_fila_input(c2, 4, "Ancho Espectral (σ_λ):", "Ej. 2.0", "[nm]", "[Típico: 0.1 a 5.0]", "Dispersión Óptica de Hardware", "Naturaleza física del aparato emisor demostrando un margen de imperfecta desviación luminosa generadora de errores cromáticos.")
+        ent_ed = self.crear_fila_input(p_izq, 2, "Coef. Dispersión (D):", "Ej. 17.0", "[ps/(nm·km)]", "[Típico: 15 a 18]", "Coeficiente Empírico Cromático", "Tasación volumétrica informando cuántos picosegundos ensanchará el destello el sistema en base al kilómetro superado y las frecuencias espectrales emitidas en conjunto.")
+        ent_el = self.crear_fila_input(p_izq, 3, "Longitud (L):", "Ej. 50.0", "[km]", "[Típico: 1 a 100]", "Alcance Completo de Red", "Recorrido logístico del conducto principal, determinante primordial multiplicativo directo de los retardos del material.")
+        ent_esig = self.crear_fila_input(p_izq, 4, "Ancho Espectral (σ_λ):", "Ej. 2.0", "[nm]", "[Típico: 0.1 a 5.0]", "Dispersión Óptica de Hardware", "Naturaleza física del aparato emisor demostrando un margen de imperfecta desviación luminosa generadora de errores cromáticos.")
         
-        res_ens = ctk.CTkLabel(c2, text="σ = -- ps", text_color="yellow", font=ctk.CTkFont(size=18, weight="bold")); res_ens.grid(row=5, column=0, columnspan=4, pady=5)
-        ctk.CTkButton(c2, text="Calcular Ensanchamiento", fg_color="#8d6e1f", hover_color="#6b5317", font=ctk.CTkFont(size=15, weight="bold"), width=180, height=36, command=lambda: self.ejecutar_calculo_tradicional(MotorModuloA.ensanchamiento_total, res_ens, "σ = {:.2f} ps", ent_ed, ent_el, ent_esig)).grid(row=6, column=0, columnspan=4, pady=10)
+        res_ens = ctk.CTkLabel(p_izq, text="σ = -- ps", text_color="yellow", font=ctk.CTkFont(size=18, weight="bold")); res_ens.grid(row=5, column=0, columnspan=4, pady=5)
+        
+        def calc_ensanchamiento():
+            try:
+                self.ejecutar_calculo_tradicional(MotorModuloA.ensanchamiento_total, res_ens, "σ = {:.2f} ps", ent_ed, ent_el, ent_esig)
+                resultado_sigma = MotorModuloA.ensanchamiento_total(float(ent_ed.get()), float(ent_el.get()), float(ent_esig.get()))
+                fig = MotorGrafico.plot_ensanchamiento(resultado_sigma)
+                self.mostrar_grafica(p_der, fig)
+            except Exception as e: pass
+
+        ctk.CTkButton(p_izq, text="Calcular y Graficar", fg_color="#8d6e1f", hover_color="#6b5317", font=ctk.CTkFont(size=15, weight="bold"), width=180, height=36, command=calc_ensanchamiento).grid(row=6, column=0, columnspan=4, pady=10)
 
         # Tarjeta 3: PMD (Tradicional)
         c3 = ctk.CTkFrame(scroll, corner_radius=10); c3.pack(fill="x", pady=10, ipady=5)
@@ -457,6 +557,101 @@ class App(ctk.CTk):
         
         res_pmd = ctk.CTkLabel(c3, text="Δτ_PMD = -- ps", text_color="yellow", font=ctk.CTkFont(size=18, weight="bold")); res_pmd.grid(row=4, column=0, columnspan=4, pady=5)
         ctk.CTkButton(c3, text="Calcular PMD", fg_color="#8d6e1f", hover_color="#6b5317", font=ctk.CTkFont(size=15, weight="bold"), width=180, height=36, command=lambda: self.ejecutar_calculo_tradicional(MotorModuloA.dispersion_polarizacion_pmd, res_pmd, "Δτ_PMD = {:.4f} ps", ent_dpmd, ent_pl)).grid(row=5, column=0, columnspan=4, pady=10)
+
+
+    # ==========================================
+    # VISTAS DEL MOTOR MATEMÁTICO
+    # ==========================================
+    def vista_modb_frecuencia(self):
+        scroll = self.crear_area_scroll("🔢 Frecuencia Normalizada y Modos", color="#66bb6a")
+        
+        # Tarjeta Integrada: Frecuencia V y Modos Guiados
+        card1, p_izq, p_der = self.crear_tarjeta_dividida(scroll)
+        ctk.CTkLabel(p_izq, text="Frecuencia Normalizada (V) ⮀ OMNIDIRECCIONAL", font=ctk.CTkFont(size=16, weight="bold")).grid(row=0, column=0, columnspan=4, pady=(10, 0))
+        ctk.CTkLabel(p_izq, text="Deja UN campo vacío (entre Radio, Longitud, NA o V) para despejar.", text_color="#64b5f6", font=ctk.CTkFont(size=13)).grid(row=1, column=0, columnspan=4, pady=(0, 10))
+
+        ent_a = self.crear_fila_input(p_izq, 2, "Radio Núcleo (a):", "Ej. 25.0", "[µm]", "[Mismas uds. que λ]", "Radio del Núcleo (a)", "Propiedad geométrica de la fibra. Debe ingresarse en la misma magnitud (ej. micrómetros) que la longitud de onda.")
+        ent_lam = self.crear_fila_input(p_izq, 3, "Longitud Onda (λ):", "Ej. 1.3", "[µm]", "[Mismas uds. que a]", "Longitud de Espectro Óptico", "Caracterización electromagnética del tamaño del ciclo de la señal de luz de origen, evaluado fundamentalmente en micrómetros.")
+        ent_na = self.crear_fila_input(p_izq, 4, "Apertura Num. (AN):", "Ej. 0.22", "[Adim]", "[Típico: 0.1 a 0.3]", "Apertura Numérica (NA)", "Determinante fundamental y unívoco rigiendo de forma total la entrada y aceptación máxima de haces permisibles desde espacios vacíos.")
+        ent_v = self.crear_fila_input(p_izq, 5, "Frecuencia V:", "Ej. 2.4", "[Adim]", "[Monomodo < 2.4048]", "Frecuencia Espacial Normalizada", "Cifra adimensional definitoria. Señala inexorablemente si las propiedades compuestas permitirán uno solo, pocos o miles de carriles superpuestos simultáneos.")
+        ent_alf = self.crear_fila_input(p_izq, 6, "Perfil Índice (α):", "Ej. 2.0", "[Opcional]", "[Gradual=2]", "Pendiente de Graduación", "Define el escalonamiento de manufactura que modela en la práctica la forma en la que cae o se eleva el índice de las capas de núcleo parabólico.")
+        
+        res_modos = ctk.CTkLabel(p_izq, text="Modos Guiados: --", text_color="#66bb6a", font=ctk.CTkFont(size=18, weight="bold")); res_modos.grid(row=7, column=0, columnspan=4, pady=5)
+        
+        def resolver_v_modos():
+            ents = {"a": ent_a, "lam": ent_lam, "an": ent_na, "v": ent_v}
+            vacios = {k: val for k, val in ents.items() if val.get().strip() == ""}
+            llenos = {k: float(val.get()) for k, val in ents.items() if val.get().strip() != ""}
+            if len(vacios) != 1: return messagebox.showerror("Error", "Deja exactamente UN campo vacío en a, λ, AN o V.")
+            inc = list(vacios.keys())[0]
+            try:
+                if inc == "v": res = MotorModuloB.frecuencia_normalizada_v(llenos["a"], llenos["lam"], llenos["an"])
+                elif inc == "a": res = MotorModuloB.v_inverso_a(llenos["v"], llenos["lam"], llenos["an"])
+                elif inc == "lam": res = MotorModuloB.v_inverso_lam(llenos["v"], llenos["a"], llenos["an"])
+                elif inc == "an": res = MotorModuloB.v_inverso_an(llenos["v"], llenos["a"], llenos["lam"])
+                ents[inc].delete(0, 'end'); ents[inc].insert(0, f"{res:.4f}")
+                
+                v_final = float(ent_v.get())
+                m_esc = MotorModuloB.modos_step_index(v_final)
+                m_grad = MotorModuloB.modos_graded_index(v_final) if not ent_alf.get() else (float(ent_alf.get()) / (float(ent_alf.get()) + 2)) * ((v_final ** 2) / 2)
+                
+                texto_modos = f"Modos Escalonados: {int(m_esc)}"
+                if ent_alf.get(): texto_modos += f" | Graduales: {int(m_grad)}"
+                res_modos.configure(text=texto_modos)
+                
+                # Gráfica
+                fig = MotorGrafico.plot_numero_v(float(ent_a.get()), float(ent_lam.get()), float(ent_na.get()))
+                self.mostrar_grafica(p_der, fig)
+            except Exception as e: messagebox.showerror("Error", str(e))
+
+        ctk.CTkButton(p_izq, text="Resolver y Graficar V", fg_color="#1a5a40", hover_color="#12402d", font=ctk.CTkFont(size=15, weight="bold"), width=180, height=36, command=resolver_v_modos).grid(row=8, column=0, columnspan=4, pady=10)
+
+    def vista_modb_corte(self):
+        scroll = self.crear_area_scroll("✂️ Longitud de Onda de Corte", color="#66bb6a")
+        
+        c1 = ctk.CTkFrame(scroll, corner_radius=10); c1.pack(fill="x", pady=10, ipady=5)
+        ctk.CTkLabel(c1, text="Condición de Corte Monomodo ⮀ OMNIDIRECCIONAL", font=ctk.CTkFont(size=16, weight="bold")).grid(row=0, column=0, columnspan=4, pady=(10, 0))
+        ctk.CTkLabel(c1, text="Deja exactamente UN campo vacío para resolver.", text_color="#64b5f6", font=ctk.CTkFont(size=13)).grid(row=1, column=0, columnspan=4, pady=(0, 10))
+
+        ent_lam_c = self.crear_fila_input(c1, 2, "Long. Corte (λ_c):", "Ej. 1.2", "[µm]", "[Debe ser < λ Operación]", "Longitud de Onda de Corte", "Longitud de onda a partir de la cual la fibra se vuelve monomodo puro (se apaga el modo superior). Si la longitud de operación es mayor, es monomodo.")
+        ent_a = self.crear_fila_input(c1, 3, "Radio Núcleo (a):", "Ej. 4.0", "[µm]", "[Típico: 4 a 50]", "Radio Esférico Interno", "Cuantificación del tamaño físico del núcleo, clave para dictar los límites frecuenciales de corte.")
+        ent_an = self.crear_fila_input(c1, 4, "Apertura Num. (AN):", "Ej. 0.12", "[Adim]", "[Típico: 0.1 a 0.3]", "Apertura Numérica (AN)", "Capacidad de aceptación lumínica basada en el contraste de índices. Impacta directamente en el punto de corte.")
+
+        def resolver_corte():
+            ents = {"lam_c": ent_lam_c, "a": ent_a, "an": ent_an}
+            vacios = {k: val for k, val in ents.items() if val.get().strip() == ""}
+            llenos = {k: float(val.get()) for k, val in ents.items() if val.get().strip() != ""}
+            if len(vacios) != 1: return messagebox.showerror("Error", "Deja exactamente UN campo vacío.")
+            inc = list(vacios.keys())[0]
+            try:
+                if inc == "lam_c": res = MotorModuloB.longitud_corte(llenos["a"], llenos["an"])
+                elif inc == "a": res = MotorModuloB.longitud_corte_inverso_a(llenos["lam_c"], llenos["an"])
+                elif inc == "an": res = MotorModuloB.longitud_corte_inverso_an(llenos["lam_c"], llenos["a"])
+                ents[inc].delete(0, 'end'); ents[inc].insert(0, f"{res:.4f}")
+            except Exception as e: messagebox.showerror("Error", str(e))
+
+        ctk.CTkButton(c1, text="Resolver Ecuación", fg_color="#1a5a40", hover_color="#12402d", font=ctk.CTkFont(size=15, weight="bold"), width=180, height=36, command=resolver_corte).grid(row=5, column=0, columnspan=4, pady=10)
+
+    def vista_modb_mfd(self):
+        scroll = self.crear_area_scroll("⭕ Diámetro de Campo Modal (MFD)", color="#66bb6a")
+        
+        c1 = ctk.CTkFrame(scroll, corner_radius=10); c1.pack(fill="x", pady=10, ipady=5)
+        ctk.CTkLabel(c1, text="Aproximación de Marcuse ➔ TRADICIONAL", font=ctk.CTkFont(size=16, weight="bold")).grid(row=0, column=0, columnspan=4, pady=(10, 0))
+        ctk.CTkLabel(c1, text="Válido en régimen monomodo. Llena TODOS los campos.", text_color="#9e9e9e", font=ctk.CTkFont(size=13)).grid(row=1, column=0, columnspan=4, pady=(0, 10))
+
+        ent_a = self.crear_fila_input(c1, 2, "Radio Núcleo (a):", "Ej. 4.0", "[µm]", "[Unidad de salida será igual]", "Radio del Núcleo", "Tamaño físico real del núcleo. Recuerda que el MFD siempre será mayor que 2a porque el campo electromagnético se extiende hacia el revestimiento.")
+        ent_v = self.crear_fila_input(c1, 3, "Valor V:", "Ej. 2.0", "[Adim]", "[Rango ideal: 1.8 a 2.4]", "Frecuencia Normalizada (V)", "El MFD depende fuertemente de V. Marcuse diseñó esta fórmula empírica precisamente para el rango monomodo (V entre 1.8 y 2.4).")
+        
+        res_mfd = ctk.CTkLabel(c1, text="MFD (2ω₀) = --", text_color="#66bb6a", font=ctk.CTkFont(size=18, weight="bold")); res_mfd.grid(row=4, column=0, columnspan=4, pady=5)
+        
+        def calc_mfd():
+            try:
+                a_val, v_val = float(ent_a.get()), float(ent_v.get())
+                mfd = MotorModuloB.mfd_marcuse(a_val, v_val)
+                res_mfd.configure(text=f"MFD (2ω₀) = {mfd:.4f}")
+            except Exception as e: messagebox.showerror("Error", str(e))
+            
+        ctk.CTkButton(c1, text="Calcular MFD", fg_color="#1a5a40", hover_color="#12402d", font=ctk.CTkFont(size=15, weight="bold"), width=180, height=36, command=calc_mfd).grid(row=5, column=0, columnspan=4, pady=10)
 
 if __name__ == "__main__":
     app = App()
