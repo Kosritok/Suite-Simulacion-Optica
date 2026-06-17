@@ -149,10 +149,10 @@ class App(ctk.CTk):
         ctk.CTkLabel(card, text="⮀ OMNIDIRECCIONAL", font=ctk.CTkFont(size=16, weight="bold")).grid(row=0, column=0, columnspan=4, pady=(10, 0))
         ctk.CTkLabel(card, text="Deja exactamente UN campo vacío para resolver la ecuación.", text_color="#64b5f6", font=ctk.CTkFont(size=13)).grid(row=1, column=0, columnspan=4, pady=(0, 10))
 
-        ent_pin = self.crear_fila_input(card, 2, "Potencia (Pᵢₙ):", "Ej. 1.0", "[mW]", "[Típico: 0.1 a 10]")
-        ent_pout = self.crear_fila_input(card, 3, "Potencia (Pₒᵤₜ):", "Ej. 0.5", "[mW]", "[Debe ser < Pᵢₙ]")
-        ent_z = self.crear_fila_input(card, 4, "Distancia (z):", "Ej. 20.0", "[km]", "[Típico: 1 a 100]")
-        ent_alpha = self.crear_fila_input(card, 5, "Atenuación (α):", "Ej. 0.25", "[dB/km]", "[Típico: 0.2 a 3.0]")
+        ent_pin = self.crear_fila_input(card, 2, "Potencia (Pᵢₙ):", "Ej. 1.0", "[mW]", "[Típico: 0.1 a 10]", "Potencia de Entrada (P_in)", "Nivel de potencia óptica inyectada por la fuente transmisora al inicio del enlace de fibra.")
+        ent_pout = self.crear_fila_input(card, 3, "Potencia (Pₒᵤₜ):", "Ej. 0.5", "[mW]", "[Debe ser < Pᵢₙ]", "Potencia de Salida (P_out)", "Nivel de potencia óptica medida al final del tramo atenuado.")
+        ent_z = self.crear_fila_input(card, 4, "Distancia (z):", "Ej. 20.0", "[km]", "[Típico: 1 a 100]", "Distancia del Enlace (z)", "Longitud física total del cable de fibra óptica a través del cual viaja la señal luminosa.")
+        ent_alpha = self.crear_fila_input(card, 5, "Atenuación (α):", "Ej. 0.25", "[dB/km]", "[Típico: 0.2 a 3.0]", "Coeficiente de Atenuación (α)", "Pérdida de potencia intrínseca del material, medida por cada kilómetro recorrido.")
 
         def resolver_atenuacion():
             ents = {"pin": ent_pin, "pout": ent_pout, "z": ent_z, "alpha": ent_alpha}
@@ -179,12 +179,12 @@ class App(ctk.CTk):
         ctk.CTkLabel(card, text="⮀ OMNIDIRECCIONAL", font=ctk.CTkFont(size=16, weight="bold")).grid(row=0, column=0, columnspan=4, pady=(10, 0))
         ctk.CTkLabel(card, text="Deja exactamente UN campo vacío para resolver la ecuación.", text_color="#64b5f6", font=ctk.CTkFont(size=13)).grid(row=1, column=0, columnspan=4, pady=(0, 10))
 
-        ent_tx = self.crear_fila_input(card, 2, "Potencia Tx:", "Ej. 3.0", "[dBm]", "[Típico: -10 a 5]")
-        ent_rx = self.crear_fila_input(card, 3, "Sensibilidad Rx:", "Ej. -32.0", "[dBm]", "[Típico: -40 a -20]")
-        ent_cab = self.crear_fila_input(card, 4, "Pérdida Cable:", "Ej. 15.0", "[dB]", "[Típico: 0 a 30]")
-        ent_emp = self.crear_fila_input(card, 5, "Empalmes:", "Ej. 1.0", "[dB]", "[Típico: 0.1 a 0.5 c/u]")
-        ent_con = self.crear_fila_input(card, 6, "Conectores:", "Ej. 2.0", "[dB]", "[Típico: 0.5 a 2.0 c/u]")
-        ent_mar = self.crear_fila_input(card, 7, "Margen Sistema:", "Ej. 5.0", "[dB]", "[Seguridad > 3]")
+        ent_tx = self.crear_fila_input(card, 2, "Potencia Tx:", "Ej. 3.0", "[dBm]", "[Típico: -10 a 5]", "Potencia de Transmisión (Tx)", "Potencia media acoplada a la fibra óptica por el emisor electrónico (Láser o LED).")
+        ent_rx = self.crear_fila_input(card, 3, "Sensibilidad Rx:", "Ej. -32.0", "[dBm]", "[Típico: -40 a -20]", "Sensibilidad de Recepción (Rx)", "Potencia mínima requerida por el fotodetector receptor para interpretar los datos sin errores perceptibles.")
+        ent_cab = self.crear_fila_input(card, 4, "Pérdida Cable:", "Ej. 15.0", "[dB]", "[Típico: 0 a 30]", "Pérdida Total del Cable", "Suma completa de la atenuación distribuida a lo largo de toda la longitud física de la fibra.")
+        ent_emp = self.crear_fila_input(card, 5, "Empalmes:", "Ej. 1.0", "[dB]", "[Típico: 0.1 a 0.5 c/u]", "Pérdidas por Empalmes", "Suma de las caídas de potencia ocasionadas por uniones permanentes en la fibra (fusión térmica).")
+        ent_con = self.crear_fila_input(card, 6, "Conectores:", "Ej. 2.0", "[dB]", "[Típico: 0.5 a 2.0 c/u]", "Pérdidas por Conectores", "Suma de atenuaciones generadas en todas las uniones mecánicas acopladas y desacoplables del sistema.")
+        ent_mar = self.crear_fila_input(card, 7, "Margen Sistema:", "Ej. 5.0", "[dB]", "[Seguridad > 3]", "Margen de Seguridad Operativo", "Reserva estática de potencia guardada explícitamente para compensar el envejecimiento futuro de los componentes.")
 
         def resolver_potencia():
             ents = {"tx": ent_tx, "rx": ent_rx, "cab": ent_cab, "emp": ent_emp, "con": ent_con, "mar": ent_mar}
@@ -213,9 +213,9 @@ class App(ctk.CTk):
         ctk.CTkLabel(card, text="➔ TRADICIONAL", font=ctk.CTkFont(size=16, weight="bold")).grid(row=0, column=0, columnspan=4, pady=(10, 0))
         ctk.CTkLabel(card, text="Llena TODOS los campos para calcular el resultado final.", text_color="#9e9e9e", font=ctk.CTkFont(size=13)).grid(row=1, column=0, columnspan=4, pady=(0, 10))
 
-        ent_rs = self.crear_fila_input(card, 2, "Radio Fuente (rs):", "Ej. 50.0", "[µm]", "[Típico: 10 a 100]")
-        ent_a = self.crear_fila_input(card, 3, "Radio Núcleo (a):", "Ej. 25.0", "[µm]", "[Típico: 4 a 50]")
-        ent_na = self.crear_fila_input(card, 4, "Apertura Numérica (NA):", "Ej. 0.22", "[Adim]", "[Típico: 0.1 a 0.3]")
+        ent_rs = self.crear_fila_input(card, 2, "Radio Fuente (rs):", "Ej. 50.0", "[µm]", "[Típico: 10 a 100]", "Radio de Emisión de la Fuente", "Radio físico que abarca el área activa emisora de luz geométrica de la fuente (Láser o LED).")
+        ent_a = self.crear_fila_input(card, 3, "Radio Núcleo (a):", "Ej. 25.0", "[µm]", "[Típico: 4 a 50]", "Radio del Núcleo", "Dimensión de la sección interna de la fibra óptica capacitada para canalizar los fotones de luz.")
+        ent_na = self.crear_fila_input(card, 4, "Apertura Numérica (NA):", "Ej. 0.22", "[Adim]", "[Típico: 0.1 a 0.3]", "Apertura Numérica", "Parámetro intrínseco de diseño que expresa el nivel de capacidad que tiene el núcleo para capturar e incorporar luz externa.")
         
         res = ctk.CTkLabel(card, text="Eficiencia (η): --", font=ctk.CTkFont(size=24, weight="bold")); res.grid(row=5, column=0, columnspan=4, pady=15)
         ctk.CTkButton(card, text="Calcular Eficiencia", font=ctk.CTkFont(size=15, weight="bold"), width=180, height=36, command=lambda: self.ejecutar_calculo_tradicional(MotorCalculoOptico.eficiencia_acoplamiento, res, "Eficiencia: {:.4f}", ent_rs, ent_a, ent_na)).grid(row=6, column=0, columnspan=4, pady=10)
@@ -226,10 +226,10 @@ class App(ctk.CTk):
         ctk.CTkLabel(c1, text="➔ TRADICIONAL", font=ctk.CTkFont(size=16, weight="bold")).grid(row=0, column=0, columnspan=4, pady=(10, 0))
         ctk.CTkLabel(c1, text="Llena TODOS los campos para calcular el resultado final.", text_color="#9e9e9e", font=ctk.CTkFont(size=13)).grid(row=1, column=0, columnspan=4, pady=(0, 10))
 
-        ent_n = self.crear_fila_input(c1, 2, "Índice Núcleo (n):", "Ej. 1.46", "[Adim]", "[Típico: 1.44 a 1.48]")
-        ent_bt = self.crear_fila_input(c1, 3, "Compresibilidad (βₜ):", "Ej. 7e-11", "[cm²/dina]", "[Típico: ~7e-11]")
-        ent_tf = self.crear_fila_input(c1, 4, "Temp. Fusión (T_f):", "Ej. 1673", "[K]", "[Típico: 1400 a 1700]")
-        ent_lnm = self.crear_fila_input(c1, 5, "Longitud Onda (λ):", "Ej. 850.0", "[nm]", "[Típico: 850, 1310, 1550]")
+        ent_n = self.crear_fila_input(c1, 2, "Índice Núcleo (n):", "Ej. 1.46", "[Adim]", "[Típico: 1.44 a 1.48]", "Índice de Refracción", "Índice de refracción estático del material dopado base que constituye el núcleo de la fibra.")
+        ent_bt = self.crear_fila_input(c1, 3, "Compresibilidad (βₜ):", "Ej. 7e-11", "[cm²/dina]", "[Típico: ~7e-11]", "Compresibilidad Isotérmica", "Característica térmica que define cómo responde estructuralmente el volumen del vidrio cuando está sometido a presión constante.")
+        ent_tf = self.crear_fila_input(c1, 4, "Temp. Fusión (T_f):", "Ej. 1673", "[K]", "[Típico: 1400 a 1700]", "Temperatura de Fusión/Ficticia", "Registro de la temperatura límite en la cual la sílice derretida de fábrica se cristaliza, encapsulando impurezas.")
+        ent_lnm = self.crear_fila_input(c1, 5, "Longitud Onda (λ):", "Ej. 850.0", "[nm]", "[Típico: 850, 1310, 1550]", "Longitud de Onda de Operación", "Punto específico en el espectro electromagnético en el que operará la señal óptica introducida.")
         
         res_r = ctk.CTkLabel(c1, text="α_Rayleigh = -- dB/km", font=ctk.CTkFont(size=18, weight="bold")); res_r.grid(row=6, column=0, columnspan=4, pady=5)
         ctk.CTkButton(c1, text="Calcular Rayleigh", font=ctk.CTkFont(size=15, weight="bold"), width=180, height=36, command=lambda: self.ejecutar_calculo_tradicional(MotorCalculoOptico.atenuacion_rayleigh_eq37, res_r, "α_Rayleigh = {:.4f} dB/km", ent_n, ent_bt, ent_tf, ent_lnm)).grid(row=7, column=0, columnspan=4, pady=10)
@@ -242,12 +242,12 @@ class App(ctk.CTk):
         ctk.CTkLabel(c1, text="Relación de Modos Efectivos (Macrocurvatura) ➔ TRADICIONAL", font=ctk.CTkFont(size=16, weight="bold")).grid(row=0, column=0, columnspan=4, pady=(10, 0))
         ctk.CTkLabel(c1, text="Llena TODOS los campos para calcular el resultado final.", text_color="#9e9e9e", font=ctk.CTkFont(size=13)).grid(row=1, column=0, columnspan=4, pady=(0, 10))
 
-        ent_alf = self.crear_fila_input(c1, 2, "Perfil Índice (α):", "Ej. 2.0", "[Adim]", "[Gradual=2, Escalonado>1000]")
-        ent_del = self.crear_fila_input(c1, 3, "Dif. Relativa (Δ):", "Ej. 0.01", "[Decimal]", "[Típico: 0.01 a 0.02]")
-        ent_a = self.crear_fila_input(c1, 4, "Radio Núcleo (a):", "Ej. 25e-6", "[Metros]", "[Ej. 25e-6]")
-        ent_R = self.crear_fila_input(c1, 5, "Radio Curvatura (R):", "Ej. 0.06", "[Metros]", "[Ej. 0.05 a 0.1]")
-        ent_n2 = self.crear_fila_input(c1, 6, "Índice Revest. (n₂):", "Ej. 1.46", "[Adim]", "[Típico: 1.44 a 1.46]")
-        ent_lmet = self.crear_fila_input(c1, 7, "Longitud Onda (λ):", "Ej. 1e-6", "[Metros]", "[Ej. 1.3e-6]")
+        ent_alf = self.crear_fila_input(c1, 2, "Perfil Índice (α):", "Ej. 2.0", "[Adim]", "[Gradual=2, Escalonado>1000]", "Coeficiente del Perfil de Índice", "Magnitud que describe la forma de la distribución del índice de refracción a través del radio de la fibra.")
+        ent_del = self.crear_fila_input(c1, 3, "Dif. Relativa (Δ):", "Ej. 0.01", "[Decimal]", "[Típico: 0.01 a 0.02]", "Diferencia de Índice", "Razón matemática representativa de la diferencia porcentual de índices entre el núcleo central y su revestimiento exterior.")
+        ent_a = self.crear_fila_input(c1, 4, "Radio Núcleo (a):", "Ej. 25e-6", "[Metros]", "[Ej. 25e-6]", "Radio del Núcleo", "Longitud desde el centro geométrico de la fibra hasta el borde del núcleo conductor de luz.")
+        ent_R = self.crear_fila_input(c1, 5, "Radio Curvatura (R):", "Ej. 0.06", "[Metros]", "[Ej. 0.05 a 0.1]", "Radio de Macrocurvatura", "Medida espacial del arco formado al enrollar o curvar físicamente toda la estructura del cable de fibra.")
+        ent_n2 = self.crear_fila_input(c1, 6, "Índice Revest. (n₂):", "Ej. 1.46", "[Adim]", "[Típico: 1.44 a 1.46]", "Índice de Refracción del Revestimiento", "Medida del medio periférico (Cladding) diseñado para bloquear la luz y rebotarla hacia el eje interior.")
+        ent_lmet = self.crear_fila_input(c1, 7, "Longitud Onda (λ):", "Ej. 1e-6", "[Metros]", "[Ej. 1.3e-6]", "Longitud de Onda", "Longitud de onda de la señal operativa expresada métricamente.")
         
         res_macro = ctk.CTkLabel(c1, text="Nₑᶠᶠ / N∞ = --", font=ctk.CTkFont(size=18, weight="bold")); res_macro.grid(row=8, column=0, columnspan=4, pady=5)
         ctk.CTkButton(c1, text="Calcular Macrocurvatura", font=ctk.CTkFont(size=15, weight="bold"), width=180, height=36, command=lambda: self.ejecutar_calculo_tradicional(MotorCalculoOptico.modos_efectivos_curvatura, res_macro, "Modos Efectivos: {:.4f}", ent_alf, ent_del, ent_a, ent_R, ent_n2, ent_lmet)).grid(row=9, column=0, columnspan=4, pady=10)
@@ -257,10 +257,10 @@ class App(ctk.CTk):
         ctk.CTkLabel(c2, text="Factor Reducción (Microcurvatura) ➔ TRADICIONAL", font=ctk.CTkFont(size=16, weight="bold")).grid(row=0, column=0, columnspan=4, pady=(10, 0))
         ctk.CTkLabel(c2, text="Llena TODOS los campos para calcular el resultado final.", text_color="#9e9e9e", font=ctk.CTkFont(size=13)).grid(row=1, column=0, columnspan=4, pady=(0, 10))
 
-        ent_ej = self.crear_fila_input(c2, 2, "Módulo Chaqueta (Eⱼ):", "Ej. 12.0", "[MPa]", "[Típico: 10 a 20]")
-        ent_eg = self.crear_fila_input(c2, 3, "Módulo Vidrio (E_g):", "Ej. 65.0", "[GPa]", "[Típico: 60 a 75]")
-        ent_ba = self.crear_fila_input(c2, 4, "Relación Radios (b/a):", "Ej. 2.5", "[Adim]", "[Típico: 2.0 a 3.0]")
-        ent_del2 = self.crear_fila_input(c2, 5, "Diferencia Relativa (Δ):", "Ej. 0.01", "[Decimal]", "[Típico: 0.01 a 0.02]")
+        ent_ej = self.crear_fila_input(c2, 2, "Módulo Chaqueta (Eⱼ):", "Ej. 12.0", "[MPa]", "[Típico: 10 a 20]", "Módulo de Young (Chaqueta)", "Nivel de firmeza y resistencia elástica ofrecida por la cubierta plástica secundaria del cableado.")
+        ent_eg = self.crear_fila_input(c2, 3, "Módulo Vidrio (E_g):", "Ej. 65.0", "[GPa]", "[Típico: 60 a 75]", "Módulo de Young (Sílice/Vidrio)", "Evaluación de la rigidez estática e inherente de los componentes internos de vidrio dentro de la fibra óptica.")
+        ent_ba = self.crear_fila_input(c2, 4, "Relación Radios (b/a):", "Ej. 2.5", "[Adim]", "[Típico: 2.0 a 3.0]", "Relación de Aspecto Geométrico (b/a)", "Cociente resultante de dividir el diámetro absoluto del revestimiento entre el diámetro equivalente del núcleo.")
+        ent_del2 = self.crear_fila_input(c2, 5, "Diferencia Relativa (Δ):", "Ej. 0.01", "[Decimal]", "[Típico: 0.01 a 0.02]", "Diferencia de Índice", "Razón representativa de la diferencia porcentual de los índices de refracción primarios.")
         
         res_micro = ctk.CTkLabel(c2, text="Factor de Reducción = --", font=ctk.CTkFont(size=18, weight="bold")); res_micro.grid(row=6, column=0, columnspan=4, pady=5)
         ctk.CTkButton(c2, text="Calcular Microcurvatura", font=ctk.CTkFont(size=15, weight="bold"), width=180, height=36, command=lambda: self.ejecutar_calculo_tradicional(MotorCalculoOptico.factor_reduccion_keiser, res_micro, "Factor de Reducción: {:.4f}", ent_ej, ent_eg, ent_ba, ent_del2)).grid(row=7, column=0, columnspan=4, pady=10)
@@ -273,9 +273,9 @@ class App(ctk.CTk):
         ctk.CTkLabel(c1, text="Dispersión G.652 ➔ TRADICIONAL", font=ctk.CTkFont(size=16, weight="bold")).grid(row=0, column=0, columnspan=4, pady=(10, 0))
         ctk.CTkLabel(c1, text="Llena TODOS los campos para calcular el resultado final.", text_color="#9e9e9e", font=ctk.CTkFont(size=13)).grid(row=1, column=0, columnspan=4, pady=(0, 10))
 
-        ent_l = self.crear_fila_input(c1, 2, "Longitud Onda (λ):", "Ej. 1550.0", "[nm]", "[Típico: 1200 a 1600]")
-        ent_l0 = self.crear_fila_input(c1, 3, "Dispersión Cero (λ₀):", "Ej. 1310.0", "[nm]", "[Típico: 1300 a 1324]")
-        ent_s0 = self.crear_fila_input(c1, 4, "Pendiente Cero (S₀):", "Ej. 0.092", "[ps/(nm²·km)]", "[Típico: 0.08 a 0.095]")
+        ent_l = self.crear_fila_input(c1, 2, "Longitud Onda (λ):", "Ej. 1550.0", "[nm]", "[Típico: 1200 a 1600]", "Longitud de Onda Transmitida", "Punto específico en el espectro bajo el cual se realizará el análisis de dispersión actual.")
+        ent_l0 = self.crear_fila_input(c1, 3, "Dispersión Cero (λ₀):", "Ej. 1310.0", "[nm]", "[Típico: 1300 a 1324]", "Longitud de Onda de Dispersión Nula", "Valor estandarizado comercialmente en la fibra donde la curva de distorsión total intersecta el punto neutro cero.")
+        ent_s0 = self.crear_fila_input(c1, 4, "Pendiente Cero (S₀):", "Ej. 0.092", "[ps/(nm²·km)]", "[Típico: 0.08 a 0.095]", "Pendiente de Dispersión Cero", "Magnitud geométrica que registra el grado de inclinación ascendente en la curva de atenuación justo en la zona neutral λ₀.")
         
         res_g652 = ctk.CTkLabel(c1, text="D(λ) = -- ps/(nm·km)", font=ctk.CTkFont(size=18, weight="bold")); res_g652.grid(row=5, column=0, columnspan=4, pady=5)
         ctk.CTkButton(c1, text="Calcular Coeficiente D", font=ctk.CTkFont(size=15, weight="bold"), width=180, height=36, command=lambda: self.ejecutar_calculo_tradicional(MotorCalculoOptico.calc_317_dispersion_g652, res_g652, "D(λ) = {:.4f} ps/(nm·km)", ent_l, ent_l0, ent_s0)).grid(row=6, column=0, columnspan=4, pady=10)
@@ -285,9 +285,9 @@ class App(ctk.CTk):
         ctk.CTkLabel(c2, text="Ecuación Sellmeier ➔ TRADICIONAL", font=ctk.CTkFont(size=16, weight="bold")).grid(row=0, column=0, columnspan=4, pady=(10, 0))
         ctk.CTkLabel(c2, text="Llena TODOS los campos para calcular el resultado final.", text_color="#9e9e9e", font=ctk.CTkFont(size=13)).grid(row=1, column=0, columnspan=4, pady=(0, 10))
 
-        ent_lum = self.crear_fila_input(c2, 2, "Longitud Onda (λ):", "Ej. 1.3", "[µm]", "[Típico: 0.8 a 1.6]")
-        ent_e0 = self.crear_fila_input(c2, 3, "Energía Reson. (E₀):", "Ej. 13.4", "[eV]", "[Típico: ~13.4]")
-        ent_ed = self.crear_fila_input(c2, 4, "Energía Disp. (E_d):", "Ej. 14.7", "[eV]", "[Típico: ~14.7]")
+        ent_lum = self.crear_fila_input(c2, 2, "Longitud Onda (λ):", "Ej. 1.3", "[µm]", "[Típico: 0.8 a 1.6]", "Longitud de Onda Específica", "Conversión a micrómetros del punto de operación para su resolución en el oscilador Sellmeier.")
+        ent_e0 = self.crear_fila_input(c2, 3, "Energía Reson. (E₀):", "Ej. 13.4", "[eV]", "[Típico: ~13.4]", "Energía de Resonancia del Oscilador", "Cualidad atómica estipulando en qué nivel se absorben de forma natural las bandas ultravioletas del material óptico.")
+        ent_ed = self.crear_fila_input(c2, 4, "Energía Disp. (E_d):", "Ej. 14.7", "[eV]", "[Típico: ~14.7]", "Fuerza del Oscilador de Dispersión", "Elemento constante que vincula matemáticamente cómo cambia el índice de refracción general según las variaciones lumínicas.")
         
         res_sell = ctk.CTkLabel(c2, text="n = --", font=ctk.CTkFont(size=18, weight="bold")); res_sell.grid(row=5, column=0, columnspan=4, pady=5)
         ctk.CTkButton(c2, text="Calcular Índice Sellmeier", font=ctk.CTkFont(size=15, weight="bold"), width=180, height=36, command=lambda: self.ejecutar_calculo_tradicional(MotorCalculoOptico.indice_sellmeier, res_sell, "n = {:.4f}", ent_lum, ent_e0, ent_ed)).grid(row=6, column=0, columnspan=4, pady=10)
@@ -303,8 +303,8 @@ class App(ctk.CTk):
         ctk.CTkLabel(c1, text="Índice de Refracción (n = c/v) ⮀ OMNIDIRECCIONAL", font=ctk.CTkFont(size=16, weight="bold")).grid(row=0, column=0, columnspan=4, pady=(10, 0))
         ctk.CTkLabel(c1, text="Deja exactamente UN campo vacío para resolver la ecuación.", text_color="#64b5f6", font=ctk.CTkFont(size=13)).grid(row=1, column=0, columnspan=4, pady=(0, 10))
         
-        ent_n = self.crear_fila_input(c1, 2, "Índice (n):", "Ej. 1.48", "[Adim]", "[Típico: 1.0 a 2.5]")
-        ent_v = self.crear_fila_input(c1, 3, "Velocidad (v):", "Ej. 2e8", "[m/s]", "[< 3e8 m/s]")
+        ent_n = self.crear_fila_input(c1, 2, "Índice (n):", "Ej. 1.48", "[Adim]", "[Típico: 1.0 a 2.5]", "Índice de Refracción Evaluado", "Proporción adimensional entre la velocidad de la luz en el espacio vacío frente a su lentitud inherente cruzando la fibra.")
+        ent_v = self.crear_fila_input(c1, 3, "Velocidad (v):", "Ej. 2e8", "[m/s]", "[< 3e8 m/s]", "Velocidad del Medio", "Frecuencia cinética constante a la que logran trasladarse los fotones inyectados a través de las moléculas del medio local.")
 
         def resolver_n_v():
             ents = {"n": ent_n, "v": ent_v}
@@ -325,10 +325,10 @@ class App(ctk.CTk):
         ctk.CTkLabel(c2, text="Ley de Snell (Refracción) ⮀ OMNIDIRECCIONAL", font=ctk.CTkFont(size=16, weight="bold")).grid(row=0, column=0, columnspan=4, pady=(10, 0))
         ctk.CTkLabel(c2, text="Deja exactamente UN campo vacío para resolver la ecuación.", text_color="#64b5f6", font=ctk.CTkFont(size=13)).grid(row=1, column=0, columnspan=4, pady=(0, 10))
         
-        ent_sn1 = self.crear_fila_input(c2, 2, "Índice Origen (n₁):", "Ej. 1.48", "[Medio 1]", "[Típico: 1.44 a 1.48]")
-        ent_sn2 = self.crear_fila_input(c2, 3, "Índice Destino (n₂):", "Ej. 1.46", "[Medio 2]", "[Típico: 1.0 a 1.48]")
-        ent_th1 = self.crear_fila_input(c2, 4, "Áng. Incidencia (θ₁):", "Ej. 30.0", "[Grados °]", "[0 a 90 °]")
-        ent_th2 = self.crear_fila_input(c2, 5, "Áng. Refracción (θ₂):", "Ej. 45.0", "[Grados °]", "[0 a 90 °]")
+        ent_sn1 = self.crear_fila_input(c2, 2, "Índice Origen (n₁):", "Ej. 1.48", "[Medio 1]", "[Típico: 1.44 a 1.48]", "Índice de Zona Transmisora", "Propiedad óptica del componente estructural del cual están originándose y saliendo los vectores iniciales de la luz.")
+        ent_sn2 = self.crear_fila_input(c2, 3, "Índice Destino (n₂):", "Ej. 1.46", "[Medio 2]", "[Típico: 1.0 a 1.48]", "Índice de Zona Receptora", "Propiedad del medio estructural secundario que interceptará a los haces lumínicos tras el cruce de frontera óptica.")
+        ent_th1 = self.crear_fila_input(c2, 4, "Áng. Incidencia (θ₁):", "Ej. 30.0", "[Grados °]", "[0 a 90 °]", "Ángulo de Choque (Incidencia)", "Inclinación originada desde la trayectoria del vector fotónico con respecto a la directriz imaginaria perpendicular (Normal) de la frontera.")
+        ent_th2 = self.crear_fila_input(c2, 5, "Áng. Refracción (θ₂):", "Ej. 45.0", "[Grados °]", "[0 a 90 °]", "Ángulo de Desviación", "Dirección definitiva a la cual logrará acomodarse la luz interna una vez invadido de lleno la composición espacial del segundo medio.")
 
         def resolver_snell():
             ents = {"n1": ent_sn1, "n2": ent_sn2, "th1": ent_th1, "th2": ent_th2}
@@ -351,8 +351,8 @@ class App(ctk.CTk):
         ctk.CTkLabel(c3, text="Parámetros del Núcleo ➔ TRADICIONAL", font=ctk.CTkFont(size=16, weight="bold")).grid(row=0, column=0, columnspan=4, pady=(10, 0))
         ctk.CTkLabel(c3, text="Llena TODOS los campos para calcular el resultado final.", text_color="#9e9e9e", font=ctk.CTkFont(size=13)).grid(row=1, column=0, columnspan=4, pady=(0, 10))
         
-        ent_pn1 = self.crear_fila_input(c3, 2, "Índice Núcleo (n₁):", "Ej. 1.48", "[n₁ > n₂]", "[Típico: 1.44 a 1.48]")
-        ent_pn2 = self.crear_fila_input(c3, 3, "Índice Revest. (n₂):", "Ej. 1.46", "[n₂ < n₁]", "[Típico: 1.44 a 1.46]")
+        ent_pn1 = self.crear_fila_input(c3, 2, "Índice Núcleo (n₁):", "Ej. 1.48", "[n₁ > n₂]", "[Típico: 1.44 a 1.48]", "Índice de Núcleo (Core)", "Material conductor primario; requiere matemáticamente poseer un valor superior al revestimiento externo para cumplir la reflexión estricta.")
+        ent_pn2 = self.crear_fila_input(c3, 3, "Índice Revest. (n₂):", "Ej. 1.46", "[n₂ < n₁]", "[Típico: 1.44 a 1.46]", "Índice de Revestimiento (Cladding)", "Estructura exterior con un déficit de refracción cuidadosamente calibrado para servir enteramente de coraza repulsora ante escapes de luz.")
         
         res_param = ctk.CTkLabel(c3, text="Áng. Crítico: -- ° | NA: -- | Δ: --", text_color="yellow", font=ctk.CTkFont(size=18, weight="bold")); res_param.grid(row=4, column=0, columnspan=4, pady=5)
         
@@ -374,11 +374,11 @@ class App(ctk.CTk):
         ctk.CTkLabel(c1, text="Frecuencia Normalizada ⮀ OMNIDIRECCIONAL", font=ctk.CTkFont(size=16, weight="bold")).grid(row=0, column=0, columnspan=4, pady=(10, 0))
         ctk.CTkLabel(c1, text="Deja UN campo vacío (entre Radio, Longitud, NA o V) para despejar.", text_color="#64b5f6", font=ctk.CTkFont(size=13)).grid(row=1, column=0, columnspan=4, pady=(0, 10))
 
-        ent_a = self.crear_fila_input(c1, 2, "Radio Núcleo (a):", "Ej. 25.0", "[µm]", "[Típico: 4 a 50]")
-        ent_lam = self.crear_fila_input(c1, 3, "Longitud Onda (λ):", "Ej. 1.3", "[µm]", "[Típico: 0.85 a 1.55]")
-        ent_na = self.crear_fila_input(c1, 4, "Apertura Num. (NA):", "Ej. 0.22", "[Adim]", "[Típico: 0.1 a 0.3]")
-        ent_v = self.crear_fila_input(c1, 5, "Número V:", "Ej. 2.4", "[Adim]", "[Monomodo < 2.405]")
-        ent_alf = self.crear_fila_input(c1, 6, "Perfil Índice (α):", "Ej. 2.0", "[Opcional]", "[Gradual=2]")
+        ent_a = self.crear_fila_input(c1, 2, "Radio Núcleo (a):", "Ej. 25.0", "[µm]", "[Típico: 4 a 50]", "Radio Esférico Interno", "Cuantificación transversal desde el eje del núcleo hasta el contorno inmediato, vital para fijar el nivel de capacidad portadora.")
+        ent_lam = self.crear_fila_input(c1, 3, "Longitud Onda (λ):", "Ej. 1.3", "[µm]", "[Típico: 0.85 a 1.55]", "Longitud de Espectro Óptico", "Caracterización electromagnética del tamaño del ciclo de la señal de luz de origen, evaluado fundamentalmente en micrómetros.")
+        ent_na = self.crear_fila_input(c1, 4, "Apertura Num. (NA):", "Ej. 0.22", "[Adim]", "[Típico: 0.1 a 0.3]", "Apertura Numérica (NA)", "Determinante fundamental y unívoco rigiendo de forma total la entrada y aceptación máxima de haces permisibles desde espacios vacíos.")
+        ent_v = self.crear_fila_input(c1, 5, "Número V:", "Ej. 2.4", "[Adim]", "[Monomodo < 2.405]", "Frecuencia Espacial Normalizada", "Cifra adimensional definitoria. Señala inexorablemente si las propiedades compuestas permitirán uno solo, pocos o miles de carriles superpuestos simultáneos.")
+        ent_alf = self.crear_fila_input(c1, 6, "Perfil Índice (α):", "Ej. 2.0", "[Opcional]", "[Gradual=2]", "Pendiente de Graduación", "Define el escalonamiento de manufactura que modela en la práctica la forma en la que cae o se eleva el índice de las capas de núcleo parabólico.")
         
         res_modos = ctk.CTkLabel(c1, text="Modos Guiados: --", text_color="yellow", font=ctk.CTkFont(size=18, weight="bold")); res_modos.grid(row=7, column=0, columnspan=4, pady=5)
         
@@ -414,10 +414,10 @@ class App(ctk.CTk):
         ctk.CTkLabel(c1, text="Deja exactamente UN campo vacío para resolver.", text_color="#64b5f6", font=ctk.CTkFont(size=13)).grid(row=1, column=0, columnspan=4, pady=(0, 5))
         ctk.CTkLabel(c1, text="⚠️ IMPORTANTE: Usa notación científica para el tiempo (Ej. 5e-9 para nanosegundos).", text_color="#ffcc00", font=ctk.CTkFont(size=13, slant="italic")).grid(row=2, column=0, columnspan=4, pady=(0, 10))
 
-        ent_rl = self.crear_fila_input(c1, 3, "Longitud (L):", "Ej. 1000", "[m]", "[En metros]")
-        ent_rn1 = self.crear_fila_input(c1, 4, "Índice Núcleo (n₁):", "Ej. 1.48", "[Adim]", "[Típico: 1.44 a 1.48]")
-        ent_rdelta = self.crear_fila_input(c1, 5, "Dif. Relativa (Δ):", "Ej. 0.01", "[Decimal]", "[Típico: 0.01 a 0.02]")
-        ent_rdt = self.crear_fila_input(c1, 6, "Retardo (ΔT):", "Ej. 5e-9", "[s]", "[Ej. 5e-9 s]")
+        ent_rl = self.crear_fila_input(c1, 3, "Longitud (L):", "Ej. 1000", "[m]", "[En metros]", "Extensión Lineal del Enlace", "Suma métrica y continua de toda la expansión longitudinal del cable físico a lo largo de un medio terrestre o aéreo.")
+        ent_rn1 = self.crear_fila_input(c1, 4, "Índice Núcleo (n₁):", "Ej. 1.48", "[Adim]", "[Típico: 1.44 a 1.48]", "Índice Estático Principal", "Valor de refracción estandarizado en donde operan plenamente y de manera constante las pulsaciones continuas ópticas.")
+        ent_rdelta = self.crear_fila_input(c1, 5, "Dif. Relativa (Δ):", "Ej. 0.01", "[Decimal]", "[Típico: 0.01 a 0.02]", "Escalamiento Relativo de Medios", "Proporcionalidad estática demostrando el margen fraccionario explícito bajo el que coexisten acoplados los dos dominios de transmisión de vidrio base.")
+        ent_rdt = self.crear_fila_input(c1, 6, "Retardo (ΔT):", "Ej. 5e-9", "[s]", "[Ej. 5e-9 s]", "Brecha de Retraso Modal Exclusivo", "Magnitud fraccional indicando qué tan tarde terminará llegando un haz rebotado frente a un haz enteramente horizontal a la meta transcurrida una longitud constante.")
         
         def resolver_retardo():
             ents = {"l": ent_rl, "n1": ent_rn1, "delta": ent_rdelta, "dt": ent_rdt}
@@ -440,9 +440,9 @@ class App(ctk.CTk):
         ctk.CTkLabel(c2, text="Ensanchamiento Total (Dispersión Cromática) ➔ TRADICIONAL", font=ctk.CTkFont(size=16, weight="bold")).grid(row=0, column=0, columnspan=4, pady=(10, 0))
         ctk.CTkLabel(c2, text="Llena TODOS los campos para calcular el resultado final.", text_color="#9e9e9e", font=ctk.CTkFont(size=13)).grid(row=1, column=0, columnspan=4, pady=(0, 10))
 
-        ent_ed = self.crear_fila_input(c2, 2, "Coef. Dispersión (D):", "Ej. 17.0", "[ps/(nm·km)]", "[Típico: 15 a 18]")
-        ent_el = self.crear_fila_input(c2, 3, "Longitud (L):", "Ej. 50.0", "[km]", "[Típico: 1 a 100]")
-        ent_esig = self.crear_fila_input(c2, 4, "Ancho Espectral (σ_λ):", "Ej. 2.0", "[nm]", "[Típico: 0.1 a 5.0]")
+        ent_ed = self.crear_fila_input(c2, 2, "Coef. Dispersión (D):", "Ej. 17.0", "[ps/(nm·km)]", "[Típico: 15 a 18]", "Coeficiente Empírico Cromático", "Tasación volumétrica informando cuántos picosegundos ensanchará el destello el sistema en base al kilómetro superado y las frecuencias espectrales emitidas en conjunto.")
+        ent_el = self.crear_fila_input(c2, 3, "Longitud (L):", "Ej. 50.0", "[km]", "[Típico: 1 a 100]", "Alcance Completo de Red", "Recorrido logístico del conducto principal, determinante primordial multiplicativo directo de los retardos del material.")
+        ent_esig = self.crear_fila_input(c2, 4, "Ancho Espectral (σ_λ):", "Ej. 2.0", "[nm]", "[Típico: 0.1 a 5.0]", "Dispersión Óptica de Hardware", "Naturaleza física del aparato emisor demostrando un margen de imperfecta desviación luminosa generadora de errores cromáticos.")
         
         res_ens = ctk.CTkLabel(c2, text="σ = -- ps", text_color="yellow", font=ctk.CTkFont(size=18, weight="bold")); res_ens.grid(row=5, column=0, columnspan=4, pady=5)
         ctk.CTkButton(c2, text="Calcular Ensanchamiento", fg_color="#8d6e1f", hover_color="#6b5317", font=ctk.CTkFont(size=15, weight="bold"), width=180, height=36, command=lambda: self.ejecutar_calculo_tradicional(MotorModuloA.ensanchamiento_total, res_ens, "σ = {:.2f} ps", ent_ed, ent_el, ent_esig)).grid(row=6, column=0, columnspan=4, pady=10)
@@ -452,8 +452,8 @@ class App(ctk.CTk):
         ctk.CTkLabel(c3, text="Dispersión por Modo de Polarización (PMD) ➔ TRADICIONAL", font=ctk.CTkFont(size=16, weight="bold")).grid(row=0, column=0, columnspan=4, pady=(10, 0))
         ctk.CTkLabel(c3, text="Llena TODOS los campos para calcular el resultado final.", text_color="#9e9e9e", font=ctk.CTkFont(size=13)).grid(row=1, column=0, columnspan=4, pady=(0, 10))
 
-        ent_dpmd = self.crear_fila_input(c3, 2, "Coef. PMD (D_PMD):", "Ej. 0.5", "[ps/√km]", "[Típico: 0.1 a 0.5]")
-        ent_pl = self.crear_fila_input(c3, 3, "Longitud (L):", "Ej. 100.0", "[km]", "[Típico: 1 a 100]")
+        ent_dpmd = self.crear_fila_input(c3, 2, "Coef. PMD (D_PMD):", "Ej. 0.5", "[ps/√km]", "[Típico: 0.1 a 0.5]", "Base Geométrica Oscilatoria", "Índice de imperfección estocástico natural evaluando el choque de ejes longitudinales que genera desfase en el rayo único estricto.")
+        ent_pl = self.crear_fila_input(c3, 3, "Longitud (L):", "Ej. 100.0", "[km]", "[Típico: 1 a 100]", "Alcance Completo de Red", "Escala métrica determinante para la acumulación proporcional no-lineal en el desplazamiento de polaridad ortogonal de los modos unificados.")
         
         res_pmd = ctk.CTkLabel(c3, text="Δτ_PMD = -- ps", text_color="yellow", font=ctk.CTkFont(size=18, weight="bold")); res_pmd.grid(row=4, column=0, columnspan=4, pady=5)
         ctk.CTkButton(c3, text="Calcular PMD", fg_color="#8d6e1f", hover_color="#6b5317", font=ctk.CTkFont(size=15, weight="bold"), width=180, height=36, command=lambda: self.ejecutar_calculo_tradicional(MotorModuloA.dispersion_polarizacion_pmd, res_pmd, "Δτ_PMD = {:.4f} ps", ent_dpmd, ent_pl)).grid(row=5, column=0, columnspan=4, pady=10)
