@@ -1,111 +1,122 @@
 import math
 
 class MotorModuloA:
-    """
-    Motor matemático para el Módulo A (Óptica Geométrica y Dispersión).
-    Contiene las fórmulas de los Capítulos 2 y 3.
-    """
-    
-    # Velocidad de la luz en el vacío (m/s)
     C = 3e8 
 
-    # ==========================================
-    # 1. ESTRUCTURAS DE LA FIBRA Y ÓPTICA GEOMÉTRICA
-    # ==========================================
-
+    # --- GEOMÉTRICA Y SNELL ---
     @staticmethod
     def indice_refraccion(v: float) -> float:
-        """Calcula el índice de refracción (n)."""
-        if v <= 0:
-            raise ValueError("La velocidad en el medio debe ser > 0.")
+        if v <= 0: raise ValueError("La velocidad en el medio debe ser > 0.")
         return MotorModuloA.C / v
 
     @staticmethod
+    def velocidad_medio(n: float) -> float:
+        if n <= 0: raise ValueError("El índice debe ser > 0.")
+        return MotorModuloA.C / n
+
+    @staticmethod
     def angulo_refraccion_snell(n1: float, n2: float, theta1_grados: float) -> float:
-        """
-        Calcula el ángulo de refracción (theta2) usando la Ley de Snell.
-        Retorna el ángulo en grados.
-        """
         theta1_rad = math.radians(theta1_grados)
         seno_theta2 = (n1 / n2) * math.sin(theta1_rad)
-        if seno_theta2 > 1.0 or seno_theta2 < -1.0:
-            raise ValueError("Reflexión interna total (no hay refracción).")
+        if abs(seno_theta2) > 1.0: raise ValueError("Reflexión interna total.")
         return math.degrees(math.asin(seno_theta2))
 
     @staticmethod
+    def snell_inverso_n1(n2: float, theta1: float, theta2: float) -> float:
+        t1, t2 = math.radians(theta1), math.radians(theta2)
+        if math.sin(t1) == 0: raise ValueError("El ángulo de incidencia no puede ser 0.")
+        return n2 * math.sin(t2) / math.sin(t1)
+
+    @staticmethod
+    def snell_inverso_n2(n1: float, theta1: float, theta2: float) -> float:
+        t1, t2 = math.radians(theta1), math.radians(theta2)
+        if math.sin(t2) == 0: raise ValueError("El ángulo de refracción no puede ser 0.")
+        return n1 * math.sin(t1) / math.sin(t2)
+
+    @staticmethod
+    def snell_inverso_theta1(n1: float, n2: float, theta2: float) -> float:
+        val = (n2 / n1) * math.sin(math.radians(theta2))
+        if abs(val) > 1.0: raise ValueError("Sin solución real.")
+        return math.degrees(math.asin(val))
+
+    @staticmethod
     def angulo_critico(n1: float, n2: float) -> float:
-        """Calcula el ángulo crítico para la reflexión interna total en grados."""
-        if n1 <= n2:
-            raise ValueError("n1 debe ser mayor que n2 para que exista un ángulo crítico.")
+        if n1 <= n2: raise ValueError("n1 debe ser > n2.")
         return math.degrees(math.asin(n2 / n1))
 
     @staticmethod
     def diferencia_indice_relativa(n1: float, n2: float) -> float:
-        """Calcula la diferencia de índice relativa (Delta)."""
         return (n1 - n2) / n1
 
     @staticmethod
     def apertura_numerica(n1: float, n2: float) -> float:
-        """Calcula la Apertura Numérica (NA) exacta."""
-        if n1 < n2:
-            raise ValueError("n1 debe ser mayor o igual a n2.")
+        if n1 < n2: raise ValueError("n1 debe ser >= n2.")
         return math.sqrt((n1 ** 2) - (n2 ** 2))
 
-    # ==========================================
-    # 2. MODOS DE PROPAGACIÓN Y PARÁMETROS DE DISEÑO
-    # ==========================================
-
+    # --- NÚMERO V Y MODOS (Nuevas Inversas) ---
     @staticmethod
     def frecuencia_normalizada_v(a: float, lam: float, na: float) -> float:
-        """Calcula la Frecuencia Normalizada (Número V)."""
-        if lam <= 0:
-            raise ValueError("La longitud de onda debe ser > 0.")
+        if lam <= 0: raise ValueError("La longitud de onda debe ser > 0.")
         return (2 * math.pi * a / lam) * na
 
     @staticmethod
+    def v_inverso_a(v: float, lam: float, na: float) -> float:
+        if na <= 0: raise ValueError("NA debe ser > 0.")
+        return (v * lam) / (2 * math.pi * na)
+
+    @staticmethod
+    def v_inverso_lam(v: float, a: float, na: float) -> float:
+        if v <= 0: raise ValueError("V debe ser > 0.")
+        return (2 * math.pi * a * na) / v
+
+    @staticmethod
+    def v_inverso_na(v: float, a: float, lam: float) -> float:
+        if a <= 0: raise ValueError("El radio 'a' debe ser > 0.")
+        return (v * lam) / (2 * math.pi * a)
+
+    @staticmethod
     def modos_guiados_escalonado(v: float) -> int:
-        """Calcula el número aproximado de modos en fibra de índice escalonado."""
         return math.floor((v ** 2) / 2)
 
     @staticmethod
     def modos_guiados_gradual(v: float, alpha: float) -> int:
-        """Calcula el número aproximado de modos en fibra de índice gradual."""
         return math.floor((alpha / (alpha + 2)) * ((v ** 2) / 2))
 
     @staticmethod
     def radio_campo_modal(a: float, v: float) -> float:
-        """
-        Calcula el Radio del campo modal (Spot Size w0) para fibras monomodo.
-        Válido típicamente para V entre 1.2 y 2.4.
-        """
-        if v <= 0:
-            raise ValueError("El número V debe ser > 0.")
-        factor = 0.65 + (1.619 * (v ** -1.5)) + (2.879 * (v ** -6))
-        return a * factor
+        if v <= 0: raise ValueError("El número V debe ser > 0.")
+        return a * (0.65 + (1.619 * (v ** -1.5)) + (2.879 * (v ** -6)))
 
-    # ==========================================
-    # 3. DISPERSIÓN DE LA SEÑAL Y RETARDOS
-    # ==========================================
-
+    # --- DISPERSIÓN Y RETARDOS (Nuevas Inversas) ---
     @staticmethod
     def retardo_modal_escalonado(l_metros: float, n1: float, delta: float) -> float:
-        """Calcula el Retardo Modal para una fibra de índice escalonado en segundos."""
         return (l_metros * n1 * delta) / MotorModuloA.C
 
     @staticmethod
+    def retardo_inverso_l(dt: float, n1: float, delta: float) -> float:
+        if n1 <= 0 or delta <= 0: raise ValueError("n1 y delta deben ser > 0.")
+        return (dt * MotorModuloA.C) / (n1 * delta)
+
+    @staticmethod
+    def retardo_inverso_n1(dt: float, l_metros: float, delta: float) -> float:
+        if l_metros <= 0 or delta <= 0: raise ValueError("L y delta deben ser > 0.")
+        return (dt * MotorModuloA.C) / (l_metros * delta)
+
+    @staticmethod
+    def retardo_inverso_delta(dt: float, l_metros: float, n1: float) -> float:
+        if l_metros <= 0 or n1 <= 0: raise ValueError("L y n1 deben ser > 0.")
+        return (dt * MotorModuloA.C) / (l_metros * n1)
+
+    @staticmethod
     def ensanchamiento_total(d_lambda: float, l_km: float, sigma_lambda: float) -> float:
-        """
-        Calcula el ensanchamiento total del pulso (Dispersión Cromática) en ps.
-        D_lambda: Dispersión en ps/(nm*km)
-        """
         return abs(d_lambda * l_km * sigma_lambda)
 
     @staticmethod
+    def ensanchamiento_inverso_l(sigma_total: float, d_lambda: float, sigma_lambda: float) -> float:
+        if d_lambda == 0 or sigma_lambda == 0: raise ValueError("D y ancho espectral deben ser != 0.")
+        return abs(sigma_total / (d_lambda * sigma_lambda))
+
+    @staticmethod
     def dispersion_polarizacion_pmd(d_pmd: float, l_km: float) -> float:
-        """
-        Calcula la Dispersión por Modo de Polarización (PMD).
-        D_pmd: Coeficiente típico en ps/sqrt(km)
-        """
-        if l_km < 0:
-            raise ValueError("La longitud no puede ser negativa.")
+        if l_km < 0: raise ValueError("La longitud no puede ser negativa.")
         return d_pmd * math.sqrt(l_km)
