@@ -55,8 +55,8 @@ class MotorGrafico:
         fig, ax = MotorGrafico.configurar_grafica("Región de Modos (V)", "Longitud de Onda (µm)", "Valor V")
         lambdas = np.linspace(max(0.1, lam_um - 0.5), lam_um + 0.5, 100)
         vs = (2 * np.pi * a_um / lambdas) * na
-        ax.plot(lambdas, vs, color='#64b5f6', linewidth=2)
-        ax.axhline(y=2.405, color='#ff5555', linestyle=':', label="Límite Monomodo")
+        ax.plot(lambdas, vs, color='#66bb6a', linewidth=2) # Verde por el modulo B
+        ax.axhline(y=2.4048, color='#ff5555', linestyle=':', label="Límite Monomodo")
         v_act = (2 * np.pi * a_um / lam_um) * na
         ax.plot(lam_um, v_act, 'go', markersize=6)
         ax.legend(facecolor='#2B2B2B', edgecolor='none', labelcolor='white', fontsize=7)
@@ -103,4 +103,47 @@ class MotorGrafico:
         ax.axhline(0, color='gray', linestyle='-')
         ax.axvline(l0, color='#ff5555', linestyle=':', label=f"λ₀ = {l0}nm")
         ax.legend(facecolor='#2B2B2B', edgecolor='none', labelcolor='white', fontsize=7)
+        return fig
+
+    # --- NUEVOS MÉTODOS PARA EL MÓDULO B ---
+    @staticmethod
+    def plot_corte(lam_c, a_um, na):
+        fig, ax = MotorGrafico.configurar_grafica("Corte Monomodo", "Longitud de Onda λ (µm)", "Frecuencia V")
+        # Rango de visualización alrededor de la longitud de corte
+        lambdas = np.linspace(max(0.1, lam_c - 1.0), lam_c + 1.0, 100)
+        vs = (2 * np.pi * a_um / lambdas) * na
+        
+        ax.plot(lambdas, vs, color='#66bb6a', linewidth=2)
+        ax.axhline(y=2.4048, color='#ff5555', linestyle=':', label="Límite V=2.405")
+        ax.axvline(x=lam_c, color='#d4af37', linestyle='--', label=f"λc = {lam_c:.2f} µm")
+        
+        # Sombrear zonas (Monomodo a la derecha de λc, Multimodo a la izquierda)
+        ax.fill_between(lambdas, 0, max(vs), where=(lambdas >= lam_c), color='#66bb6a', alpha=0.1, label='Monomodo')
+        ax.fill_between(lambdas, 0, max(vs), where=(lambdas < lam_c), color='#ff5555', alpha=0.1, label='Multimodo')
+        
+        ax.set_ylim(0, max(vs))
+        ax.legend(facecolor='#2B2B2B', edgecolor='none', labelcolor='white', fontsize=7)
+        return fig
+
+    @staticmethod
+    def plot_mfd(a_um, mfd):
+        fig, ax = MotorGrafico.configurar_grafica("Distribución del Campo Modal", "Radio transversal (µm)", "Intensidad I(r)")
+        w0 = mfd / 2.0
+        r = np.linspace(-3*a_um, 3*a_um, 200)
+        
+        # Curva de campana de Gauss
+        intensidad = np.exp(-2 * (r**2) / (w0**2))
+        ax.plot(r, intensidad, color='#66bb6a', linewidth=2, label='Intensidad Óptica')
+        
+        # Dibujar y sombrear el núcleo de la fibra
+        ax.axvline(x=a_um, color='gray', linestyle='--')
+        ax.axvline(x=-a_um, color='gray', linestyle='--')
+        ax.fill_between(r, 0, 1.1, where=(r >= -a_um) & (r <= a_um), color='gray', alpha=0.2, label='Núcleo de Fibra')
+        
+        # Marcar los límites donde la intensidad cae a 1/e^2 (Límites del MFD)
+        ax.axvline(x=w0, color='#d4af37', linestyle=':')
+        ax.axvline(x=-w0, color='#d4af37', linestyle=':', label='Límite MFD (1/e²)')
+        
+        ax.set_ylim(0, 1.1)
+        ax.legend(facecolor='#2B2B2B', edgecolor='none', labelcolor='white', fontsize=7, loc='upper right')
         return fig

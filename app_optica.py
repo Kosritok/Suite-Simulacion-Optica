@@ -229,7 +229,6 @@ class App(ctk.CTk):
                 elif inc == "z": res = MotorCalculoOptico.calcular_distancia_atenuacion(llenos["pin"], llenos["pout"], llenos["alpha"])
                 ents[inc].delete(0, 'end'); ents[inc].insert(0, f"{res:.4f}")
                 
-                # Gráfica
                 fig = MotorGrafico.plot_atenuacion(float(ent_pin.get()), float(ent_alpha.get()), float(ent_z.get()))
                 self.mostrar_grafica(p_der, fig)
             except Exception as e: messagebox.showerror("Error", str(e))
@@ -266,7 +265,6 @@ class App(ctk.CTk):
                 elif inc == "con": res = llenos["tx"] - llenos["rx"] - llenos["mar"] - llenos["cab"] - llenos["emp"]
                 ents[inc].delete(0, 'end'); ents[inc].insert(0, f"{res:.2f}")
                 
-                # Gráfica
                 fig = MotorGrafico.plot_presupuesto(float(ent_tx.get()), float(ent_rx.get()), float(ent_cab.get()), float(ent_emp.get()), float(ent_con.get()))
                 self.mostrar_grafica(p_der, fig)
             except Exception as e: messagebox.showerror("Error", str(e))
@@ -560,12 +558,11 @@ class App(ctk.CTk):
 
 
     # ==========================================
-    # VISTAS DEL MOTOR MATEMÁTICO
+    # VISTAS DEL MOTOR MATEMÁTICO (MÓDULO B)
     # ==========================================
     def vista_modb_frecuencia(self):
         scroll = self.crear_area_scroll("🔢 Frecuencia Normalizada y Modos", color="#66bb6a")
         
-        # Tarjeta Integrada: Frecuencia V y Modos Guiados
         card1, p_izq, p_der = self.crear_tarjeta_dividida(scroll)
         ctk.CTkLabel(p_izq, text="Frecuencia Normalizada (V) ⮀ OMNIDIRECCIONAL", font=ctk.CTkFont(size=16, weight="bold")).grid(row=0, column=0, columnspan=4, pady=(10, 0))
         ctk.CTkLabel(p_izq, text="Deja UN campo vacío (entre Radio, Longitud, NA o V) para despejar.", text_color="#64b5f6", font=ctk.CTkFont(size=13)).grid(row=1, column=0, columnspan=4, pady=(0, 10))
@@ -599,7 +596,6 @@ class App(ctk.CTk):
                 if ent_alf.get(): texto_modos += f" | Graduales: {int(m_grad)}"
                 res_modos.configure(text=texto_modos)
                 
-                # Gráfica
                 fig = MotorGrafico.plot_numero_v(float(ent_a.get()), float(ent_lam.get()), float(ent_na.get()))
                 self.mostrar_grafica(p_der, fig)
             except Exception as e: messagebox.showerror("Error", str(e))
@@ -609,13 +605,13 @@ class App(ctk.CTk):
     def vista_modb_corte(self):
         scroll = self.crear_area_scroll("✂️ Longitud de Onda de Corte", color="#66bb6a")
         
-        c1 = ctk.CTkFrame(scroll, corner_radius=10); c1.pack(fill="x", pady=10, ipady=5)
-        ctk.CTkLabel(c1, text="Condición de Corte Monomodo ⮀ OMNIDIRECCIONAL", font=ctk.CTkFont(size=16, weight="bold")).grid(row=0, column=0, columnspan=4, pady=(10, 0))
-        ctk.CTkLabel(c1, text="Deja exactamente UN campo vacío para resolver.", text_color="#64b5f6", font=ctk.CTkFont(size=13)).grid(row=1, column=0, columnspan=4, pady=(0, 10))
+        card1, p_izq, p_der = self.crear_tarjeta_dividida(scroll)
+        ctk.CTkLabel(p_izq, text="Condición de Corte Monomodo ⮀ OMNIDIRECCIONAL", font=ctk.CTkFont(size=16, weight="bold")).grid(row=0, column=0, columnspan=4, pady=(10, 0))
+        ctk.CTkLabel(p_izq, text="Deja exactamente UN campo vacío para resolver.", text_color="#64b5f6", font=ctk.CTkFont(size=13)).grid(row=1, column=0, columnspan=4, pady=(0, 10))
 
-        ent_lam_c = self.crear_fila_input(c1, 2, "Long. Corte (λ_c):", "Ej. 1.2", "[µm]", "[Debe ser < λ Operación]", "Longitud de Onda de Corte", "Longitud de onda a partir de la cual la fibra se vuelve monomodo puro (se apaga el modo superior). Si la longitud de operación es mayor, es monomodo.")
-        ent_a = self.crear_fila_input(c1, 3, "Radio Núcleo (a):", "Ej. 4.0", "[µm]", "[Típico: 4 a 50]", "Radio Esférico Interno", "Cuantificación del tamaño físico del núcleo, clave para dictar los límites frecuenciales de corte.")
-        ent_an = self.crear_fila_input(c1, 4, "Apertura Num. (AN):", "Ej. 0.12", "[Adim]", "[Típico: 0.1 a 0.3]", "Apertura Numérica (AN)", "Capacidad de aceptación lumínica basada en el contraste de índices. Impacta directamente en el punto de corte.")
+        ent_lam_c = self.crear_fila_input(p_izq, 2, "Long. Corte (λ_c):", "Ej. 1.2", "[µm]", "[Debe ser < λ Operación]", "Longitud de Onda de Corte", "Longitud de onda a partir de la cual la fibra se vuelve monomodo puro (se apaga el modo superior). Si la longitud de operación es mayor, es monomodo.")
+        ent_a = self.crear_fila_input(p_izq, 3, "Radio Núcleo (a):", "Ej. 4.0", "[µm]", "[Típico: 4 a 50]", "Radio Esférico Interno", "Cuantificación del tamaño físico del núcleo, clave para dictar los límites frecuenciales de corte.")
+        ent_an = self.crear_fila_input(p_izq, 4, "Apertura Num. (AN):", "Ej. 0.12", "[Adim]", "[Típico: 0.1 a 0.3]", "Apertura Numérica (AN)", "Capacidad de aceptación lumínica basada en el contraste de índices. Impacta directamente en el punto de corte.")
 
         def resolver_corte():
             ents = {"lam_c": ent_lam_c, "a": ent_a, "an": ent_an}
@@ -628,30 +624,36 @@ class App(ctk.CTk):
                 elif inc == "a": res = MotorModuloB.longitud_corte_inverso_a(llenos["lam_c"], llenos["an"])
                 elif inc == "an": res = MotorModuloB.longitud_corte_inverso_an(llenos["lam_c"], llenos["a"])
                 ents[inc].delete(0, 'end'); ents[inc].insert(0, f"{res:.4f}")
+                
+                fig = MotorGrafico.plot_corte(float(ent_lam_c.get()), float(ent_a.get()), float(ent_an.get()))
+                self.mostrar_grafica(p_der, fig)
             except Exception as e: messagebox.showerror("Error", str(e))
 
-        ctk.CTkButton(c1, text="Resolver Ecuación", fg_color="#1a5a40", hover_color="#12402d", font=ctk.CTkFont(size=15, weight="bold"), width=180, height=36, command=resolver_corte).grid(row=5, column=0, columnspan=4, pady=10)
+        ctk.CTkButton(p_izq, text="Resolver y Graficar Corte", fg_color="#1a5a40", hover_color="#12402d", font=ctk.CTkFont(size=15, weight="bold"), width=180, height=36, command=resolver_corte).grid(row=5, column=0, columnspan=4, pady=10)
 
     def vista_modb_mfd(self):
         scroll = self.crear_area_scroll("⭕ Diámetro de Campo Modal (MFD)", color="#66bb6a")
         
-        c1 = ctk.CTkFrame(scroll, corner_radius=10); c1.pack(fill="x", pady=10, ipady=5)
-        ctk.CTkLabel(c1, text="Aproximación de Marcuse ➔ TRADICIONAL", font=ctk.CTkFont(size=16, weight="bold")).grid(row=0, column=0, columnspan=4, pady=(10, 0))
-        ctk.CTkLabel(c1, text="Válido en régimen monomodo. Llena TODOS los campos.", text_color="#9e9e9e", font=ctk.CTkFont(size=13)).grid(row=1, column=0, columnspan=4, pady=(0, 10))
+        card1, p_izq, p_der = self.crear_tarjeta_dividida(scroll)
+        ctk.CTkLabel(p_izq, text="Aproximación de Marcuse ➔ TRADICIONAL", font=ctk.CTkFont(size=16, weight="bold")).grid(row=0, column=0, columnspan=4, pady=(10, 0))
+        ctk.CTkLabel(p_izq, text="Válido en régimen monomodo. Llena TODOS los campos.", text_color="#9e9e9e", font=ctk.CTkFont(size=13)).grid(row=1, column=0, columnspan=4, pady=(0, 10))
 
-        ent_a = self.crear_fila_input(c1, 2, "Radio Núcleo (a):", "Ej. 4.0", "[µm]", "[Unidad de salida será igual]", "Radio del Núcleo", "Tamaño físico real del núcleo. Recuerda que el MFD siempre será mayor que 2a porque el campo electromagnético se extiende hacia el revestimiento.")
-        ent_v = self.crear_fila_input(c1, 3, "Valor V:", "Ej. 2.0", "[Adim]", "[Rango ideal: 1.8 a 2.4]", "Frecuencia Normalizada (V)", "El MFD depende fuertemente de V. Marcuse diseñó esta fórmula empírica precisamente para el rango monomodo (V entre 1.8 y 2.4).")
+        ent_a = self.crear_fila_input(p_izq, 2, "Radio Núcleo (a):", "Ej. 4.0", "[µm]", "[Unidad de salida será igual]", "Radio del Núcleo", "Tamaño físico real del núcleo. Recuerda que el MFD siempre será mayor que 2a porque el campo electromagnético se extiende hacia el revestimiento.")
+        ent_v = self.crear_fila_input(p_izq, 3, "Valor V:", "Ej. 2.0", "[Adim]", "[Rango ideal: 1.8 a 2.4]", "Frecuencia Normalizada (V)", "El MFD depende fuertemente de V. Marcuse diseñó esta fórmula empírica precisamente para el rango monomodo (V entre 1.8 y 2.4).")
         
-        res_mfd = ctk.CTkLabel(c1, text="MFD (2ω₀) = --", text_color="#66bb6a", font=ctk.CTkFont(size=18, weight="bold")); res_mfd.grid(row=4, column=0, columnspan=4, pady=5)
+        res_mfd = ctk.CTkLabel(p_izq, text="MFD (2ω₀) = --", text_color="#66bb6a", font=ctk.CTkFont(size=18, weight="bold")); res_mfd.grid(row=4, column=0, columnspan=4, pady=5)
         
         def calc_mfd():
             try:
                 a_val, v_val = float(ent_a.get()), float(ent_v.get())
                 mfd = MotorModuloB.mfd_marcuse(a_val, v_val)
                 res_mfd.configure(text=f"MFD (2ω₀) = {mfd:.4f}")
+                
+                fig = MotorGrafico.plot_mfd(a_val, mfd)
+                self.mostrar_grafica(p_der, fig)
             except Exception as e: messagebox.showerror("Error", str(e))
             
-        ctk.CTkButton(c1, text="Calcular MFD", fg_color="#1a5a40", hover_color="#12402d", font=ctk.CTkFont(size=15, weight="bold"), width=180, height=36, command=calc_mfd).grid(row=5, column=0, columnspan=4, pady=10)
+        ctk.CTkButton(p_izq, text="Calcular y Graficar MFD", fg_color="#1a5a40", hover_color="#12402d", font=ctk.CTkFont(size=15, weight="bold"), width=180, height=36, command=calc_mfd).grid(row=5, column=0, columnspan=4, pady=10)
 
 if __name__ == "__main__":
     app = App()
