@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib
-matplotlib.use('TkAgg')
+matplotlib.use('agg')  # <--- SOLUCIÓN AL ERROR (Renderizado en memoria)
 import matplotlib.pyplot as plt
 
 class MotorGrafico:
@@ -23,105 +23,108 @@ class MotorGrafico:
         fig, ax = MotorGrafico.configurar_grafica("Decaimiento de Potencia", "Distancia (km)", "Potencia (mW/µW)")
         distancias = np.linspace(0, max(z_max, 1.0), 100)
         potencias = pin * (10 ** (-(alpha * distancias) / 10))
-        ax.plot(distancias, potencias, color='#64b5f6', linewidth=2)
-        ax.fill_between(distancias, potencias, color='#64b5f6', alpha=0.1)
+        ax.plot(distancias, potencias, color='#66bb6a', linewidth=2)
+        ax.fill_between(distancias, potencias, color='#66bb6a', alpha=0.1)
         return fig
 
     @staticmethod
-    def plot_presupuesto(tx, rx, cab, emp, con):
-        fig, ax = MotorGrafico.configurar_grafica("Diagrama de Presupuesto", "Etapas del Enlace", "Potencia (dBm)")
-        etapas = ["Tx", "Conect.", "Cable", "Empalmes", "Rx"]
-        valores = [tx, tx - con, tx - con - cab, tx - con - cab - emp, tx - con - cab - emp]
-        ax.step(range(len(etapas)), valores, where='post', color='#64b5f6', marker='o', linewidth=2)
-        ax.axhline(y=rx, color='#ff5555', linestyle='--', label=f"Sensibilidad: {rx} dBm")
-        ax.set_xticks(range(len(etapas)))
-        ax.set_xticklabels(etapas, rotation=20, fontsize=7)
+    def plot_presupuesto(tx, rx, cable, empalmes, conectores):
+        fig, ax = MotorGrafico.configurar_grafica("Caída del Presupuesto", "Componentes del Enlace", "Potencia (dBm)")
+        etiquetas = ['Tx', 'Cable', 'Empalmes', 'Conect', 'Rx Ideal']
+        valores = [tx, tx - cable, tx - cable - empalmes, tx - cable - empalmes - conectores, rx]
+        ax.step(range(len(etiquetas)), valores, where='mid', color='#64b5f6', linewidth=2, marker='o')
+        ax.set_xticks(range(len(etiquetas)))
+        ax.set_xticklabels(etiquetas, rotation=15, ha='right', fontsize=7)
+        ax.axhline(y=rx, color='#ff5555', linestyle='--', linewidth=1.5, label='Límite Rx')
         ax.legend(facecolor='#2B2B2B', edgecolor='none', labelcolor='white', fontsize=7)
         return fig
 
     @staticmethod
-    def plot_rayleigh(lambd_act):
-        fig, ax = MotorGrafico.configurar_grafica("Esparcimiento Rayleigh", "Longitud de Onda (nm)", "Pérdida Relativa")
-        lambdas = np.linspace(800, 1600, 100)
-        atenuaciones = 1 / (lambdas ** 4)
-        atenuaciones = atenuaciones / max(atenuaciones) # Normalizar curva
-        ax.plot(lambdas, atenuaciones, color='#64b5f6', linewidth=2)
-        ax.axvline(x=lambd_act, color='#d4af37', linestyle='--', label=f"λ act: {lambd_act:.0f}nm")
+    def plot_rayleigh(lam_op):
+        fig, ax = MotorGrafico.configurar_grafica("Dispersión Rayleigh", "Longitud de onda (nm)", "Atenuación (dB/km)")
+        lams = np.linspace(800, 1600, 100)
+        atenuaciones = 1.0 / (lams / 1000)**4
+        ax.plot(lams, atenuaciones, color='#ab47bc', linewidth=2)
+        ax.axvline(x=lam_op, color='#d4af37', linestyle='--', linewidth=1.5, label=f'Operación: {lam_op} nm')
         ax.legend(facecolor='#2B2B2B', edgecolor='none', labelcolor='white', fontsize=7)
         return fig
 
     @staticmethod
-    def plot_numero_v(a_um, lam_um, na):
-        fig, ax = MotorGrafico.configurar_grafica("Región de Modos (V)", "Longitud de Onda (µm)", "Valor V")
+    def plot_g652(lam_0, s0):
+        fig, ax = MotorGrafico.configurar_grafica("Dispersión Cromática G.652", "Longitud de onda (nm)", "D (ps/nm·km)")
+        lams = np.linspace(1200, 1600, 100)
+        dispersiones = (s0 / 4) * (lams - (lam_0**4 / lams**3))
+        ax.plot(lams, dispersiones, color='#64b5f6', linewidth=2)
+        ax.axhline(y=0, color='gray', linestyle='--')
+        ax.axvline(x=lam_0, color='#d4af37', linestyle=':', label=f'Disp. Cero ({lam_0} nm)')
+        ax.legend(facecolor='#2B2B2B', edgecolor='none', labelcolor='white', fontsize=7)
+        return fig
+
+    @staticmethod
+    def plot_ensanchamiento(sigma_total):
+        fig, ax = MotorGrafico.configurar_grafica("Ensanchamiento de Pulso", "Tiempo (ps)", "Amplitud Relativa")
+        t = np.linspace(-3*sigma_total, 3*sigma_total, 200)
+        if sigma_total == 0: sigma_total = 1e-9 
+        pulso_in = np.exp(- (t**2) / (2 * (sigma_total/3)**2))
+        pulso_out = np.exp(- (t**2) / (2 * sigma_total**2))
+        ax.plot(t, pulso_in, color='#64b5f6', linestyle='--', label='Entrada')
+        ax.plot(t, pulso_out, color='#ff5555', linewidth=2, label='Salida')
+        ax.fill_between(t, pulso_out, color='#ff5555', alpha=0.1)
+        ax.legend(facecolor='#2B2B2B', edgecolor='none', labelcolor='white', fontsize=7)
+        return fig
+
+    @staticmethod
+    def plot_snell(n1, n2, theta1, theta2):
+        fig, ax = MotorGrafico.configurar_grafica("Refracción de Snell", "Frontera (x)", "Normal (y)")
+        ax.axhline(y=0, color='#d4af37', linewidth=2)
+        ax.axvline(x=0, color='gray', linestyle='--')
+        rad1 = np.radians(theta1)
+        x1, y1 = -np.sin(rad1), np.cos(rad1)
+        ax.plot([x1, 0], [y1, 0], color='#ff5555', linewidth=2, label='Incidente')
+        
+        rad2 = np.radians(theta2)
+        if n1 > n2 and theta1 >= np.degrees(np.arcsin(n2/n1)):
+            x2, y2 = np.sin(rad1), np.cos(rad1)
+            ax.plot([0, x2], [0, y2], color='#ff5555', linewidth=2, linestyle=':', label='RTI')
+        else:
+            x2, y2 = np.sin(rad2), -np.cos(rad2)
+            ax.plot([0, x2], [0, y2], color='#64b5f6', linewidth=2, label='Refractado')
+            
+        ax.set_xlim(-1.5, 1.5)
+        ax.set_ylim(-1.5, 1.5)
+        ax.set_aspect('equal')
+        ax.legend(facecolor='#2B2B2B', edgecolor='none', labelcolor='white', fontsize=7)
+        return fig
+
+    @staticmethod
+    def plot_numero_v(a, lam_um, na):
+        fig, ax = MotorGrafico.configurar_grafica("Análisis de Modos (Frecuencia V)", "Longitud de onda (µm)", "Número V")
         lambdas = np.linspace(max(0.1, lam_um - 0.5), lam_um + 0.5, 100)
-        vs = (2 * np.pi * a_um / lambdas) * na
-        ax.plot(lambdas, vs, color='#66bb6a', linewidth=2) # Verde por el modulo B
-        ax.axhline(y=2.4048, color='#ff5555', linestyle=':', label="Límite Monomodo")
-        v_act = (2 * np.pi * a_um / lam_um) * na
-        ax.plot(lam_um, v_act, 'go', markersize=6)
+        vs = (2 * np.pi * a / lambdas) * na
+        ax.plot(lambdas, vs, color='#64b5f6', linewidth=2)
+        
+        v_op = (2 * np.pi * a / lam_um) * na
+        ax.plot(lam_um, v_op, marker='o', markersize=6, color='white')
+        ax.axvline(x=lam_um, color='gray', linestyle=':')
+        
+        ax.axhline(y=2.4048, color='#ff5555', linestyle='--', label='Corte Monomodo (2.4048)')
         ax.legend(facecolor='#2B2B2B', edgecolor='none', labelcolor='white', fontsize=7)
         return fig
 
     @staticmethod
-    def plot_snell(n1, n2, th1, th2):
-        fig, ax = MotorGrafico.configurar_grafica("Ley de Snell", "Frontera", "Medio")
-        ax.axhline(0, color='gray', linewidth=2)
-        ax.axvline(0, color='#555555', linestyle='--')
+    def plot_corte(lam_c_um, a, an):
+        fig, ax = MotorGrafico.configurar_grafica("Condición de Corte Monomodo", "Longitud de Onda (µm)", "Número V")
+        lambdas = np.linspace(max(0.1, lam_c_um - 1.0), lam_c_um + 1.0, 100)
+        vs = (2 * np.pi * a * an) / lambdas
         
-        x_inc = [-np.sin(np.radians(th1)), 0]
-        y_inc = [np.cos(np.radians(th1)), 0]
-        ax.plot(x_inc, y_inc, color='#d4af37', linewidth=2, label='Incidente')
+        ax.plot(lambdas, vs, color='#64b5f6', linewidth=2)
+        ax.axhline(y=2.4048, color='#d4af37', linestyle='--', linewidth=1.5, label='V = 2.4048')
+        ax.axvline(x=lam_c_um, color='#ff5555', linestyle=':', label=f'λ Corte: {lam_c_um*1000:.1f} nm')
         
-        x_ref = [0, np.sin(np.radians(th2))]
-        y_ref = [0, -np.cos(np.radians(th2))]
-        ax.plot(x_ref, y_ref, color='#64b5f6', linewidth=2, label='Refractado')
+        ax.fill_between(lambdas, 0, np.max(vs), where=(lambdas >= lam_c_um), color='#66bb6a', alpha=0.1, label='Monomodo')
+        ax.fill_between(lambdas, 0, np.max(vs), where=(lambdas < lam_c_um), color='#ff5555', alpha=0.1, label='Multimodo')
         
-        ax.set_xlim(-1, 1); ax.set_ylim(-1, 1)
-        ax.text(-0.8, 0.5, f"n1 = {n1:.2f}", color="white")
-        ax.text(0.2, -0.5, f"n2 = {n2:.2f}", color="white")
-        ax.axis('off')
-        return fig
-
-    @staticmethod
-    def plot_ensanchamiento(sigma_val):
-        fig, ax = MotorGrafico.configurar_grafica("Ensanchamiento Temporal", "Tiempo (ps/ns)", "Amplitud")
-        x = np.linspace(-10, 10, 200)
-        y_in = np.exp(-(x**2)/0.5)
-        ancho = max(1.0, float(sigma_val) / 5) 
-        y_out = (1/ancho) * np.exp(-(x**2)/(2 * ancho**2))
-        ax.plot(x, y_in, color='#d4af37', linestyle='--', label='Pulso Entrada')
-        ax.plot(x, y_out, color='#64b5f6', linewidth=2, label='Pulso Salida')
-        ax.legend(facecolor='#2B2B2B', edgecolor='none', labelcolor='white', fontsize=7)
-        return fig
-
-    @staticmethod
-    def plot_g652(l0, s0):
-        fig, ax = MotorGrafico.configurar_grafica("Curva Dispersión G.652", "Longitud de Onda (nm)", "D(λ) ps/(nm·km)")
-        lambdas = np.linspace(1200, 1600, 100)
-        d_vals = (s0 / 4) * (lambdas - (l0**4 / lambdas**3))
-        ax.plot(lambdas, d_vals, color='#64b5f6', linewidth=2)
-        ax.axhline(0, color='gray', linestyle='-')
-        ax.axvline(l0, color='#ff5555', linestyle=':', label=f"λ₀ = {l0}nm")
-        ax.legend(facecolor='#2B2B2B', edgecolor='none', labelcolor='white', fontsize=7)
-        return fig
-
-    # --- NUEVOS MÉTODOS PARA EL MÓDULO B ---
-    @staticmethod
-    def plot_corte(lam_c, a_um, na):
-        fig, ax = MotorGrafico.configurar_grafica("Corte Monomodo", "Longitud de Onda λ (µm)", "Frecuencia V")
-        # Rango de visualización alrededor de la longitud de corte
-        lambdas = np.linspace(max(0.1, lam_c - 1.0), lam_c + 1.0, 100)
-        vs = (2 * np.pi * a_um / lambdas) * na
-        
-        ax.plot(lambdas, vs, color='#66bb6a', linewidth=2)
-        ax.axhline(y=2.4048, color='#ff5555', linestyle=':', label="Límite V=2.405")
-        ax.axvline(x=lam_c, color='#d4af37', linestyle='--', label=f"λc = {lam_c:.2f} µm")
-        
-        # Sombrear zonas (Monomodo a la derecha de λc, Multimodo a la izquierda)
-        ax.fill_between(lambdas, 0, max(vs), where=(lambdas >= lam_c), color='#66bb6a', alpha=0.1, label='Monomodo')
-        ax.fill_between(lambdas, 0, max(vs), where=(lambdas < lam_c), color='#ff5555', alpha=0.1, label='Multimodo')
-        
-        ax.set_ylim(0, max(vs))
+        ax.set_ylim(0, np.max(vs))
         ax.legend(facecolor='#2B2B2B', edgecolor='none', labelcolor='white', fontsize=7)
         return fig
 
@@ -131,19 +134,16 @@ class MotorGrafico:
         w0 = mfd / 2.0
         r = np.linspace(-3*a_um, 3*a_um, 200)
         
-        # Curva de campana de Gauss
         intensidad = np.exp(-2 * (r**2) / (w0**2))
         ax.plot(r, intensidad, color='#66bb6a', linewidth=2, label='Intensidad Óptica')
         
-        # Dibujar y sombrear el núcleo de la fibra
         ax.axvline(x=a_um, color='gray', linestyle='--')
         ax.axvline(x=-a_um, color='gray', linestyle='--')
-        ax.fill_between(r, 0, 1.1, where=(r >= -a_um) & (r <= a_um), color='gray', alpha=0.2, label='Núcleo de Fibra')
+        ax.fill_between(r, 0, intensidad, where=(abs(r) <= a_um), color='#64b5f6', alpha=0.3, label='Núcleo (2a)')
+        ax.fill_between(r, 0, intensidad, where=(abs(r) > a_um), color='#ff5555', alpha=0.3, label='Revestimiento')
         
-        # Marcar los límites donde la intensidad cae a 1/e^2 (Límites del MFD)
         ax.axvline(x=w0, color='#d4af37', linestyle=':')
-        ax.axvline(x=-w0, color='#d4af37', linestyle=':', label='Límite MFD (1/e²)')
+        ax.axvline(x=-w0, color='#d4af37', linestyle=':', label='MFD (2ω₀)')
         
-        ax.set_ylim(0, 1.1)
-        ax.legend(facecolor='#2B2B2B', edgecolor='none', labelcolor='white', fontsize=7, loc='upper right')
+        ax.legend(facecolor='#2B2B2B', edgecolor='none', labelcolor='white', fontsize=7)
         return fig

@@ -1,13 +1,11 @@
 import numpy as np
 import matplotlib
-matplotlib.use('TkAgg')
+matplotlib.use('agg') # <--- SOLUCIÓN AL ERROR (Renderizado en memoria)
 import matplotlib.pyplot as plt
 
 class MotorModulacion:
     @staticmethod
     def configurar_subplots(titulo):
-        # constrained_layout=True es la solución definitiva. Calcula dinámicamente las cajas de texto
-        # para que NUNCA colisionen, adaptándose a la altura dictada por Tkinter.
         fig, axs = plt.subplots(3, 1, figsize=(4.5, 4.5), facecolor='#2B2B2B', constrained_layout=True)
         
         fig.suptitle(titulo, color='#d4af37', fontsize=11, fontweight='bold')
@@ -18,7 +16,6 @@ class MotorModulacion:
                 spine.set_edgecolor('#555555')
             ax.grid(color='#444444', linestyle=':', linewidth=0.5)
             
-            # Mantenemos la ocultación del eje X superior para ahorrar espacio
             if i < 2:
                 ax.tick_params(labelbottom=False)
             else:
@@ -66,7 +63,6 @@ class MotorModulacion:
             idx = (t >= i * Tb) & (t < (i + 1) * Tb)
             mensaje[idx] = bits[i]
             
-            # Asignación digital de fase directa (BPSK)
             b_t = 1 if bits[i] == 1 else -1
             modulada[idx] = b_t * Es * np.cos(2 * np.pi * fc * t[idx])
             
@@ -125,7 +121,6 @@ class MotorModulacion:
             idx = (t >= i * Tb) & (t < (i + 1) * Tb)
             mensaje[idx] = bits[i]
             
-            # Lógica diferencial
             fase = np.pi if d_bits[i+1] == 1 else 0
             modulada[idx] = Es * np.cos(2 * np.pi * fc * t[idx] + fase)
             
