@@ -282,7 +282,7 @@ class OpticaApp:
                 self.mostrar_grafica(p_der, fig)
 
         p_izq.controls.append(ft.Button("Resolver y Graficar", on_click=resolver, bgcolor="#333333", color=ft.Colors.WHITE))
-        content.extend([card, self.crear_panel_formula("P_out = P_in · 10^(-α · z / 10)", "P_out = Potencia Final | P_in = Inicial | α = Coef. Atenuación | z = Distancia")])
+        content.extend([card, self.crear_panel_formula("Pₒᵤₜ = Pᵢₙ · 10^(-α·z / 10)", "Pₒᵤₜ = Potencia Final | Pᵢₙ = Inicial | α = Coef. Atenuación | z = Distancia")])
         self.set_main_content("📉 Cálculo de Atenuación", ft.Colors.WHITE, content)
 
     def v_presupuesto(self):
@@ -290,8 +290,8 @@ class OpticaApp:
         card, p_izq, p_der = self.crear_tarjeta_dividida()
         p_izq.controls.extend([ft.Text("⮀ OMNIDIRECCIONAL", size=16, weight=ft.FontWeight.BOLD), ft.Text("Deja exactamente UN campo vacío.", size=13, color="#64b5f6")])
 
-        r1, e_tx = self.crear_fila_input("Potencia Tx:", "Ej. 3.0", "[dBm]", "", "Tx", "Potencia emisor.")
-        r2, e_rx = self.crear_fila_input("Sensibilidad Rx:", "Ej. -32.0", "[dBm]", "", "Rx", "Sensibilidad receptor.")
+        r1, e_tx = self.crear_fila_input("Potencia (Pₜₓ):", "Ej. 3.0", "[dBm]", "", "Tx", "Potencia emisor.")
+        r2, e_rx = self.crear_fila_input("Sensibilidad (Pᵣₓ):", "Ej. -32.0", "[dBm]", "", "Rx", "Sensibilidad receptor.")
         r3, e_cab = self.crear_fila_input("Pérdida Cable:", "Ej. 15.0", "[dB]", "", "Cable", "Atenuación total fibra.")
         r4, e_emp = self.crear_fila_input("Empalmes:", "Ej. 1.0", "[dB]", "", "Empalmes", "Pérdidas uniones.")
         r5, e_con = self.crear_fila_input("Conectores:", "Ej. 2.0", "[dB]", "", "Conectores", "Atenuación mecánicas.")
@@ -314,7 +314,7 @@ class OpticaApp:
                 self.mostrar_grafica(p_der, fig)
 
         p_izq.controls.append(ft.Button("Resolver y Graficar", on_click=resolver, bgcolor="#333333", color=ft.Colors.WHITE))
-        content.extend([card, self.crear_panel_formula("P_Rx = P_Tx - P_Cable - P_Empalmes - P_Conectores - Margen", "En dominio logarítmico (dB / dBm)")])
+        content.extend([card, self.crear_panel_formula("Pᵣₓ = Pₜₓ - P_cable - P_empalmes - P_conectores - Margen", "En dominio logarítmico (dB / dBm)")])
         self.set_main_content("⚡ Presupuesto de Potencia", ft.Colors.WHITE, content)
 
     def v_eficiencia(self):
@@ -322,7 +322,7 @@ class OpticaApp:
         card = ft.Container(bgcolor="#1e1e1e", padding=20, border_radius=10, margin=15)
         col = ft.Column(controls=[ft.Text("➔ TRADICIONAL (Llena TODOS los campos)", size=16, weight=ft.FontWeight.BOLD)])
         
-        r1, e_rs = self.crear_fila_input("Radio Fuente (rs):", "Ej. 50.0", "[µm]", "", "rs", "Radio emisor.")
+        r1, e_rs = self.crear_fila_input("Radio Fuente (rₛ):", "Ej. 50.0", "[µm]", "", "rs", "Radio emisor.")
         r2, e_a = self.crear_fila_input("Radio Núcleo (a):", "Ej. 25.0", "[µm]", "", "a", "Radio núcleo.")
         r3, e_na = self.crear_fila_input("Apertura Num. (NA):", "Ej. 0.22", "[Adim]", "", "NA", "Apertura Numérica.")
         lbl_res = ft.Text("Eficiencia (η): --", size=24, weight=ft.FontWeight.BOLD, color="#66bb6a")
@@ -336,7 +336,7 @@ class OpticaApp:
 
         col.controls.extend([r1, r2, r3, ft.Container(content=lbl_res, padding=10), ft.Button("Calcular", on_click=calcular)])
         card.content = col
-        content.extend([card, self.crear_panel_formula("Si rs ≤ a: η = NA²   |   Si rs > a: η = (a/rs)² · NA²", "Fórmulas de eficiencia óptica")])
+        content.extend([card, self.crear_panel_formula("Si rₛ ≤ a:  η = NA²   |   Si rₛ > a:  η = (a/rₛ)² · NA²", "Fórmulas de eficiencia óptica")])
         self.set_main_content("🎯 Eficiencia de Acoplamiento", ft.Colors.WHITE, content)
 
     def v_rayleigh(self):
@@ -348,19 +348,19 @@ class OpticaApp:
         r2, e_bt = self.crear_fila_input("Compresibilidad (βₜ):", "Ej. 7e-11", "[cm²/dina]", "", "Compresibilidad", "Respuesta térmica.")
         r3, e_tf = self.crear_fila_input("Temp. Fusión (T_f):", "Ej. 1673", "[K]", "", "T_f", "Punto cristalización.")
         r4, e_lnm = self.crear_fila_input("Longitud Onda (λ):", "Ej. 850.0", "[nm]", "", "λ", "Espectro.")
-        lbl_res = ft.Text("α_Rayleigh = -- dB/km", size=18, weight=ft.FontWeight.BOLD, color="#66bb6a")
+        lbl_res = ft.Text("αᵣ = -- dB/km", size=18, weight=ft.FontWeight.BOLD, color="#66bb6a")
         p_izq.controls.extend([r1, r2, r3, r4, ft.Container(content=lbl_res, padding=10)])
 
         def calcular(e):
             try:
                 res = MotorCalculoOptico.atenuacion_rayleigh_eq37(float(e_n.value), float(e_bt.value), float(e_tf.value), float(e_lnm.value))
-                lbl_res.value = f"α_Rayleigh = {res:.4f} dB/km"
+                lbl_res.value = f"αᵣ = {res:.4f} dB/km"
                 fig = MotorGrafico.plot_rayleigh(float(e_lnm.value))
                 self.mostrar_grafica(p_der, fig)
             except Exception as ex: self.mostrar_error(str(ex))
 
         p_izq.controls.append(ft.Button("Calcular y Graficar", on_click=calcular))
-        content.extend([card, self.crear_panel_formula("α_R = (8π³ / 3λ⁴) · (n²-1)² · β_T · K_B · T_f", "Dispersión molecular")])
+        content.extend([card, self.crear_panel_formula("αᵣ = (8π³ / 3λ⁴) · (n² - 1)² · βₜ · k_B · T_f", "Dispersión molecular")])
         self.set_main_content("✨ Rayleigh y Predicción", ft.Colors.WHITE, content)
 
     def v_curvaturas(self):
@@ -374,7 +374,7 @@ class OpticaApp:
         r4, e_R = self.crear_fila_input("Radio Curvatura (R):", "Ej. 0.06", "[Metros]", "", "R", "Radio del doblez.")
         r5, e_n2 = self.crear_fila_input("Índice Revest. (n₂):", "Ej. 1.46", "[Adim]", "", "n₂", "Revestimiento.")
         r6, e_lam = self.crear_fila_input("Longitud Onda (λ):", "Ej. 1300.0", "[nm]", "", "λ", "Longitud en nm.")
-        lbl_res = ft.Text("Nₑᶠᶠ / N∞ = --", size=18, weight=ft.FontWeight.BOLD, color="#66bb6a")
+        lbl_res = ft.Text("Nₑᶠᶠ / N_∞ = --", size=18, weight=ft.FontWeight.BOLD, color="#66bb6a")
 
         def calcular(e):
             try:
@@ -386,7 +386,7 @@ class OpticaApp:
 
         col.controls.extend([r1, r2, r3, r4, r5, r6, ft.Container(content=lbl_res, padding=10), ft.Button("Calcular", on_click=calcular)])
         card.content = col
-        content.extend([card, self.crear_panel_formula("N_eff / N_∞ = 1 - [(α+2)/(2αΔ)] · [ 2a/R + (3 / 2n₂kR)^(2/3) ]", "Cálculo macrocurvaturas")])
+        content.extend([card, self.crear_panel_formula("Nₑᶠᶠ / N_∞ = 1 - [(α+2) / (2αΔ)] · [ 2a/R + (3 / 2n₂kR)²/³ ]", "Cálculo macrocurvaturas")])
         self.set_main_content("🔄 Análisis Macrocurvaturas", ft.Colors.WHITE, content)
 
     def v_modelos(self):
@@ -498,7 +498,7 @@ class OpticaApp:
         
         r1, e_ed = self.crear_fila_input("Coef. Dispersión (D):", "Ej. 17.0", "[ps/(nm·km)]", "", "D", "Coeficiente Empírico Cromático")
         r2, e_el = self.crear_fila_input("Longitud (L):", "Ej. 50.0", "[km]", "", "L", "Alcance Completo de Red")
-        r3, e_esig = self.crear_fila_input("Ancho Espectral (σ_λ):", "Ej. 2.0", "[nm]", "", "σ_λ", "Dispersión Óptica de Hardware")
+        r3, e_esig = self.crear_fila_input("Ancho Espectro (σ_λ):", "Ej. 2.0", "[nm]", "", "σ_λ", "Dispersión Óptica de Hardware")
         lbl_ens = ft.Text("σ = -- ps", size=18, weight=ft.FontWeight.BOLD, color="#d4af37")
         p_izq.controls.extend([r1, r2, r3, ft.Container(content=lbl_ens, padding=10)])
         
@@ -614,7 +614,7 @@ class OpticaApp:
             except Exception as ex: self.mostrar_error(str(ex))
             
         p_izq.controls.append(ft.Button("Calcular y Graficar MFD", on_click=calc_mfd, bgcolor="#12402d", color=ft.Colors.WHITE))
-        content.extend([card, self.crear_panel_formula("2ω₀ = 2a [ 0.65 + 1.619/(V^1.5) + 2.879/(V^6) ]", "Fórmula de Marcuse para dispersión de campana.")])
+        content.extend([card, self.crear_panel_formula("2ω₀ = 2a [ 0.65 + 1.619 / V¹·⁵ + 2.879 / V⁶ ]", "Fórmula de Marcuse para dispersión de campana.")])
         self.set_main_content("⭕ Diámetro de Campo Modal (MFD)", "#66bb6a", content)
 
 
@@ -624,87 +624,125 @@ class OpticaApp:
     def v_ask(self):
         content = []
         card, p_izq, p_der = self.crear_tarjeta_dividida()
-        p_izq.controls.append(ft.Text("Generador de Ondas ➔ DIRECTO", size=16, weight=ft.FontWeight.BOLD))
+        p_izq.controls.append(ft.Text("Generador BASK / OOK (Óptico) ➔ DIRECTO", size=16, weight=ft.FontWeight.BOLD))
 
-        r1, e_es = self.crear_fila_input("Amplitud (E_s):", "Ej. 1.0", "[V/m]", "", "Amplitud Portadora", "Intensidad base.")
-        r2, e_m = self.crear_fila_input("Índice (m):", "Ej. 0.8", "[Adim]", "", "Índice Modulación", "Grado de afectación de la amplitud.")
-        r3, e_fc = self.crear_fila_input("Frec. Portadora (f_c):", "Ej. 20.0", "[Hz]", "", "f_c", "Frecuencia base simulada.")
-        r4, e_fm = self.crear_fila_input("Frec. Mensaje (f_m):", "Ej. 2.0", "[Hz]", "", "f_m", "Frecuencia analógica del mensaje.")
-        p_izq.controls.extend([r1, r2, r3, r4])
+        r1, e_es = self.crear_fila_input("Amplitud (A):", "Ej. 1.0", "[V/m]", "", "Amplitud", "Intensidad del láser cuando está encendido.")
+        r2, e_lam = self.crear_fila_input("Long. Onda (λ):", "Ej. 1550.0", "[nm]", "", "Longitud de onda", "Define la frecuencia portadora en THz.")
+        r3, e_fm = self.crear_fila_input("Tasa Bits (fₘ):", "Ej. 500.0", "[GHz]", "", "Tasa de bits", "Velocidad de transmisión.")
+        r4, e_bits = self.crear_fila_input("Secuencia Bits:", "Ej. 10110", "[0s y 1s]", "", "Bits", "Mensaje digital.")
+        
+        lbl_fc = ft.Text("f_c = -- THz", size=16, weight=ft.FontWeight.BOLD, color="#ab47bc")
+        p_izq.controls.extend([r1, r2, r3, r4, ft.Container(content=lbl_fc, padding=5)])
 
         def graficar_ask(e):
             try:
-                fig = MotorModulacion.plot_ask(float(e_es.value), float(e_m.value), float(e_fc.value), float(e_fm.value))
+                lam_m = float(e_lam.value) * 1e-9
+                fc_real_thz = (3e8 / lam_m) / 1e12
+                lbl_fc.value = f"f_c (Real) = {fc_real_thz:.4f} THz"
+                
+                fig = MotorModulacion.plot_ask_digital(float(e_es.value), float(e_fm.value), e_bits.value)
                 self.mostrar_grafica(p_der, fig)
                 self.reproducir_exito()
-            except ValueError: self.mostrar_error("Por favor, ingresa números válidos.")
+            except ValueError: 
+                self.mostrar_error("Ingresa valores numéricos válidos y una secuencia binaria.")
 
-        p_izq.controls.append(ft.Button("Generar Gráficas ASK", on_click=graficar_ask, bgcolor="#38006b", color=ft.Colors.WHITE))
-        content.extend([card, self.crear_panel_formula("E_ASK(t) = E_s [ 1 + m · cos(2π f_m t) ] cos(2π f_c t)", "Modulación en Amplitud.")])
-        self.set_main_content("📈 Modulación ASK (AM Óptico)", "#ab47bc", content)
+        p_izq.controls.append(ft.Button("Generar Gráfica BASK", on_click=graficar_ask, bgcolor="#38006b", color=ft.Colors.WHITE))
+        
+        formula = "s(t) = A · cos(2π·f_c·t)  para '1'   |   s(t) = 0  para '0'"
+        content.extend([card, self.crear_panel_formula(formula, "On-Off Keying (OOK): El láser se enciende o apaga completamente.")])
+        self.set_main_content("📈 Modulación ASK Digital (OOK)", "#ab47bc", content)
 
     def v_psk(self):
         content = []
         card, p_izq, p_der = self.crear_tarjeta_dividida()
-        p_izq.controls.append(ft.Text("Codificación BPSK ➔ DIRECTO", size=16, weight=ft.FontWeight.BOLD))
+        p_izq.controls.append(ft.Text("Codificación BPSK (Óptico) ➔ DIRECTO", size=16, weight=ft.FontWeight.BOLD))
 
-        r1, e_es = self.crear_fila_input("Amplitud (E_s):", "Ej. 1.0", "[V/m]", "", "Amplitud Portadora", "Intensidad base constante.")
-        r2, e_fc = self.crear_fila_input("Frec. Portadora (f_c):", "Ej. 5.0", "[Hz]", "[Recomendado: 2 a 5 Hz]", "Frecuencia Portadora", "Usa valores bajos para ver saltos de fase (180°).")
-        r3, e_bits = self.crear_fila_input("Secuencia Bits:", "Ej. 10110", "[Cualquier texto 0s y 1s]", "", "Tren de Bits BPSK", "Secuencia binaria libre (ej. 111000101).")
-        p_izq.controls.extend([r1, r2, r3])
+        r1, e_es = self.crear_fila_input("Amplitud (A):", "Ej. 1.0", "[V/m]", "", "Amplitud Portadora", "Intensidad base constante.")
+        r2, e_lam = self.crear_fila_input("Long. Onda (λ):", "Ej. 1550.0", "[nm]", "", "Longitud de onda", "Define la frecuencia portadora en THz.")
+        r3, e_fm = self.crear_fila_input("Tasa Bits (fₘ):", "Ej. 500.0", "[GHz]", "", "Tasa de bits", "Velocidad de transmisión.")
+        r4, e_bits = self.crear_fila_input("Secuencia Bits:", "Ej. 10110", "[0s y 1s]", "", "Bits", "Mensaje digital.")
+        
+        lbl_fc = ft.Text("f_c = -- THz", size=16, weight=ft.FontWeight.BOLD, color="#ab47bc")
+        p_izq.controls.extend([r1, r2, r3, r4, ft.Container(content=lbl_fc, padding=5)])
 
         def graficar_psk(e):
             try:
-                fig = MotorModulacion.plot_psk(float(e_es.value), float(e_fc.value), e_bits.value)
+                lam_m = float(e_lam.value) * 1e-9
+                fc_real_thz = (3e8 / lam_m) / 1e12
+                lbl_fc.value = f"f_c (Real) = {fc_real_thz:.4f} THz"
+                
+                fig = MotorModulacion.plot_psk_digital(float(e_es.value), float(e_fm.value), e_bits.value)
                 self.mostrar_grafica(p_der, fig)
                 self.reproducir_exito()
-            except ValueError: self.mostrar_error("Por favor, ingresa números válidos.")
+            except ValueError: 
+                self.mostrar_error("Ingresa valores numéricos válidos y una secuencia binaria.")
 
         p_izq.controls.append(ft.Button("Generar Gráficas BPSK", on_click=graficar_psk, bgcolor="#38006b", color=ft.Colors.WHITE))
-        content.extend([card, self.crear_panel_formula("v_{bpsk}(t) = b(t) · √(2P) · cos(2π f_c t)", "b(t) es ±1 según el bit. √(2P) equivale a la Amplitud E_s.")])
+        
+        formula = "s(t) = A · cos(2π·f_c·t)  para '1'   |   s(t) = A · cos(2π·f_c·t + π)  para '0'"
+        content.extend([card, self.crear_panel_formula(formula, "Desplazamiento de fase de 180° (π radianes) en transiciones.")])
         self.set_main_content("📉 Modulación BPSK (Binaria de Fase)", "#ab47bc", content)
 
     def v_fsk(self):
         content = []
         card, p_izq, p_der = self.crear_tarjeta_dividida()
-        p_izq.controls.append(ft.Text("Generador FSK ➔ DIRECTO", size=16, weight=ft.FontWeight.BOLD))
+        p_izq.controls.append(ft.Text("Generador BFSK (Óptico) ➔ DIRECTO", size=16, weight=ft.FontWeight.BOLD))
 
-        r1, e_es = self.crear_fila_input("Amplitud (E_s):", "Ej. 1.0", "[V/m]", "", "Amplitud", "Intensidad base constante.")
-        r2, e_df = self.crear_fila_input("Desviación (Δf):", "Ej. 5.0", "[Hz]", "", "Δf", "Desviación pico hacia arriba/abajo.")
-        r3, e_fc = self.crear_fila_input("Frec. Portadora (f_c):", "Ej. 20.0", "[Hz]", "", "f_c", "Frecuencia central simulada.")
-        r4, e_fm = self.crear_fila_input("Frec. Mensaje (f_m):", "Ej. 2.0", "[Hz]", "", "f_m", "Frecuencia de la tasa de cambio.")
-        p_izq.controls.extend([r1, r2, r3, r4])
+        r1, e_es = self.crear_fila_input("Amplitud (A):", "Ej. 1.0", "[V/m]", "", "Amplitud", "Intensidad del láser.")
+        r2, e_lam = self.crear_fila_input("Long. Onda (λ):", "Ej. 1550.0", "[nm]", "", "Longitud de onda", "Define la frecuencia portadora en THz.")
+        r3, e_fm = self.crear_fila_input("Tasa Bits (fₘ):", "Ej. 1.0", "[GHz]", "", "Tasa de bits", "Velocidad de transmisión.")
+        r4, e_bits = self.crear_fila_input("Secuencia Bits:", "Ej. 10110", "[0s y 1s]", "", "Bits", "Mensaje digital.")
+        
+        lbl_fc = ft.Text("f_c = -- THz", size=16, weight=ft.FontWeight.BOLD, color="#ab47bc")
+        p_izq.controls.extend([r1, r2, r3, r4, ft.Container(content=lbl_fc, padding=5)])
 
         def graficar_fsk(e):
             try:
-                fig = MotorModulacion.plot_fsk(float(e_es.value), float(e_df.value), float(e_fc.value), float(e_fm.value))
+                lam_m = float(e_lam.value) * 1e-9
+                fc_real_thz = (3e8 / lam_m) / 1e12
+                lbl_fc.value = f"f_c (Real) = {fc_real_thz:.4f} THz"
+                
+                fig = MotorModulacion.plot_fsk_digital(float(e_es.value), float(e_fm.value), e_bits.value)
                 self.mostrar_grafica(p_der, fig)
                 self.reproducir_exito()
-            except ValueError: self.mostrar_error("Por favor, ingresa números válidos.")
+            except ValueError: 
+                self.mostrar_error("Por favor, ingresa valores numéricos y una secuencia de solo 0s y 1s.")
 
-        p_izq.controls.append(ft.Button("Generar Gráficas FSK", on_click=graficar_fsk, bgcolor="#38006b", color=ft.Colors.WHITE))
-        content.extend([card, self.crear_panel_formula("E_FSK(t) = E_s · cos[ 2π f_c t + (Δf / f_m) · sin(2π f_m t) ]", "Desplazamiento analógico de frecuencia.")])
-        self.set_main_content("📊 Modulación FSK", "#ab47bc", content)
+        p_izq.controls.append(ft.Button("Generar Gráfica BFSK", on_click=graficar_fsk, bgcolor="#38006b", color=ft.Colors.WHITE))
+        
+        formula = "s(t) = A · cos(2π·f₁·t)  para '1'   |   s(t) = A · cos(2π·f₂·t)  para '0'"
+        content.extend([card, self.crear_panel_formula(formula, "Donde f₁ y f₂ son las frecuencias desplazadas.")])
+        self.set_main_content("📊 Modulación FSK Digital", "#ab47bc", content)
 
     def v_dpsk(self):
         content = []
         card, p_izq, p_der = self.crear_tarjeta_dividida()
-        p_izq.controls.append(ft.Text("Codificación DPSK ➔ DIRECTO", size=16, weight=ft.FontWeight.BOLD))
+        p_izq.controls.append(ft.Text("Codificación DPSK (Óptico) ➔ DIRECTO", size=16, weight=ft.FontWeight.BOLD))
 
-        r1, e_es = self.crear_fila_input("Amplitud (E_s):", "Ej. 1.0", "[V/m]", "", "Amplitud Portadora", "Intensidad de la onda luz base.")
-        r2, e_fc = self.crear_fila_input("Frec. Portadora (f_c):", "Ej. 5.0", "[Hz]", "[Recomendado: 2 a 5 Hz]", "Frecuencia", "Igual que PSK, usa valores bajos.")
-        r3, e_bits = self.crear_fila_input("Secuencia Bits:", "Ej. 10110", "[0s y 1s]", "", "Tren Bits", "Secuencia binaria libre.")
-        p_izq.controls.extend([r1, r2, r3])
+        r1, e_es = self.crear_fila_input("Amplitud (A):", "Ej. 1.0", "[V/m]", "", "Amplitud Portadora", "Intensidad de la onda luz base.")
+        r2, e_lam = self.crear_fila_input("Long. Onda (λ):", "Ej. 1550.0", "[nm]", "", "Longitud de onda", "Define la frecuencia portadora en THz.")
+        r3, e_fm = self.crear_fila_input("Tasa Bits (fₘ):", "Ej. 500.0", "[GHz]", "", "Tasa de bits", "Velocidad de transmisión.")
+        r4, e_bits = self.crear_fila_input("Secuencia Bits:", "Ej. 10110", "[0s y 1s]", "", "Tren Bits", "Secuencia binaria libre.")
+        
+        lbl_fc = ft.Text("f_c = -- THz", size=16, weight=ft.FontWeight.BOLD, color="#ab47bc")
+        p_izq.controls.extend([r1, r2, r3, r4, ft.Container(content=lbl_fc, padding=5)])
 
         def graficar_dpsk(e):
             try:
-                fig = MotorModulacion.plot_dpsk(float(e_es.value), float(e_fc.value), e_bits.value)
+                lam_m = float(e_lam.value) * 1e-9
+                fc_real_thz = (3e8 / lam_m) / 1e12
+                lbl_fc.value = f"f_c (Real) = {fc_real_thz:.4f} THz"
+                
+                fig = MotorModulacion.plot_dpsk_digital(float(e_es.value), float(e_fm.value), e_bits.value)
                 self.mostrar_grafica(p_der, fig)
                 self.reproducir_exito()
-            except ValueError: self.mostrar_error("Revisa que Amplitud y Frecuencia sean válidos.")
+            except ValueError: 
+                self.mostrar_error("Revisa que todos los campos tengan valores numéricos válidos.")
 
         p_izq.controls.append(ft.Button("Generar Gráficas DPSK", on_click=graficar_dpsk, bgcolor="#38006b", color=ft.Colors.WHITE))
-        content.extend([card, self.crear_panel_formula("d_k = d_{k-1} ⊕ b_k   |   E_DPSK(t) = E_s · cos(2π f_c t + d_k · π)", "Modulación Diferencial de Fase.")])
+        
+        formula = "dₖ = dₖ₋₁ ⊕ bₖ   |   s(t) = A · cos(2π·f_c·t + dₖ·π)"
+        content.extend([card, self.crear_panel_formula(formula, "Modulación Diferencial de Fase: Se modula la diferencia entre bits sucesivos.")])
         self.set_main_content("🔢 Modulación DPSK", "#ab47bc", content)
 
 
