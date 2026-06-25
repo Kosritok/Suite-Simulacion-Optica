@@ -53,26 +53,29 @@ class OpticaApp:
         self.page.update()
 
     def abrir_ayuda(self, concepto, definicion):
-        dlg = ft.AlertDialog(
-            title=ft.Text(f"Ayuda: {concepto}", weight=ft.FontWeight.BOLD),
-            content=ft.Column(
-                controls=[
-                    ft.Text(definicion, size=15),
-                    ft.Divider(),
-                    ft.Text("Para más información y derivación de fórmulas, consulte el marco teórico.", color=ft.Colors.GREY, italic=True, size=12)
-                ], tight=True, width=400
-            )
-        )
         
         def cerrar_dlg(e):
-            dlg.open = False
+            self.dlg_ayuda.open = False
             self.page.update()
-            
-        dlg.actions = [ft.TextButton("Cerrar", on_click=cerrar_dlg)]
+
+        if not hasattr(self, "dlg_ayuda"):
+            self.dlg_ayuda = ft.AlertDialog(
+                # Dejamos vacíos el title y content al inicio
+                actions=[ft.TextButton("Cerrar", on_click=cerrar_dlg)]
+            )
+            self.page.overlay.append(self.dlg_ayuda)
+
+        self.dlg_ayuda.title = ft.Text(f"Ayuda: {concepto}", weight=ft.FontWeight.BOLD)
         
-        # Misma lógica: al overlay y se cambia su estado a abierto
-        self.page.overlay.append(dlg)
-        dlg.open = True
+        self.dlg_ayuda.content = ft.Column(
+            controls=[
+                ft.Text(definicion, size=15),
+                ft.Divider(),
+                ft.Text("Para más información y derivación de fórmulas, consulte el marco teórico.", color=ft.Colors.GREY, italic=True, size=12)
+            ], tight=True, width=400
+        )
+
+        self.dlg_ayuda.open = True
         self.page.update()
 
     # HERRAMIENTAS DE CONSTRUCCIÓN VISUAL
@@ -83,8 +86,10 @@ class OpticaApp:
             controls=[
                 ft.Container(content=ft.Text(label_text, size=14), width=180, alignment=ft.Alignment.CENTER_RIGHT),
                 ent,
-                ft.Container(content=ft.Text(f"{unit_text}  {rango_text}", size=13, color="#d4af37" if rango_text else ft.Colors.GREY), width=270),
-                ft.IconButton(icon=ft.Icons.HELP_OUTLINE, icon_size=20, on_click=lambda e: self.abrir_ayuda(help_title, help_desc))
+                # Se utiliza expand=True para evitar el desbordamiento del botón de ayuda
+                ft.Container(content=ft.Text(f"{unit_text}  {rango_text}", size=13, color="#d4af37" if rango_text else ft.Colors.GREY), expand=True),
+                # Aseguramos la captura estricta del contexto en las variables del lambda
+                ft.IconButton(icon=ft.Icons.HELP_OUTLINE, icon_size=20, on_click=lambda e, t=help_title, d=help_desc: self.abrir_ayuda(t, d))
             ], spacing=5
         )
         return row, ent
