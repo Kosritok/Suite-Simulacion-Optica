@@ -499,26 +499,86 @@ class OpticaApp:
 
     def v_dispersion(self):
         content = []
-        card, p_izq, p_der = self.crear_tarjeta_dividida()
-        p_izq.controls.append(ft.Text("Ensanchamiento Total (Cromático) ➔ TRADICIONAL", size=16, weight=ft.FontWeight.BOLD))
+
         
-        r1, e_ed = self.crear_fila_input("Coef. Dispersión (D):", "Ej. 17.0", "[ps/(nm·km)]", "", "D", "Coeficiente Empírico Cromático")
-        r2, e_el = self.crear_fila_input("Longitud (L):", "Ej. 50.0", "[km]", "", "L", "Alcance Completo de Red")
-        r3, e_esig = self.crear_fila_input("Ancho Espectro (σ_λ):", "Ej. 2.0", "[nm]", "", "σ_λ", "Dispersión Óptica de Hardware")
-        lbl_ens = ft.Text("σ = -- ps", size=18, weight=ft.FontWeight.BOLD, color="#d4af37")
-        p_izq.controls.extend([r1, r2, r3, ft.Container(content=lbl_ens, padding=10)])
+        # 1. ENSANCHAMIENTO TOTAL (CROMÁTICO) ⮀ OMNIDIRECCIONAL
         
-        def calc_ensanchamiento(e):
+        card1, p_izq1, p_der1 = self.crear_tarjeta_dividida()
+        p_izq1.controls.append(ft.Text("Ensanchamiento Total (Cromático) ⮀ OMNIDIRECCIONAL", size=16, weight=ft.FontWeight.BOLD))
+        
+        r1_c, e_ed = self.crear_fila_input("Coef. Dispersión (D):", "Ej. 17.0", "[ps/(nm·km)]", "", "D", "Coeficiente Empírico Cromático")
+        r2_c, e_el = self.crear_fila_input("Longitud (L):", "Ej. 50.0", "[km]", "", "L", "Alcance Completo de Red")
+        r3_c, e_esig = self.crear_fila_input("Ancho Espectro (σ_λ):", "Ej. 2.0", "[nm]", "", "σ_λ", "Dispersión Óptica de Hardware")
+        r4_c, e_ens = self.crear_fila_input("Ensanchamiento (σ):", "Ej. 1700.0", "[ps]", "", "σ", "Ensanchamiento total resultante")
+        p_izq1.controls.extend([r1_c, r2_c, r3_c, r4_c])
+        
+        def calc_cromatico(e):
+            ents = {"d": e_ed, "l": e_el, "sig": e_esig, "ens": e_ens}
+            funcs = {
+                "ens": lambda ll: MotorModuloA.ensanchamiento_total(ll["d"], ll["l"], ll["sig"]),
+                "l":   lambda ll: MotorModuloA.ensanchamiento_inverso_l(ll["ens"], ll["d"], ll["sig"]),
+                "d":   lambda ll: MotorModuloA.ensanchamiento_inverso_l(ll["ens"], ll["l"], ll["sig"]),
+                "sig": lambda ll: MotorModuloA.ensanchamiento_inverso_l(ll["ens"], ll["d"], ll["l"])
+            }
+            inc, res = self._resolver_omni(ents, funcs)
+            if inc:
+                fig = MotorGrafico.plot_ensanchamiento(float(e_ens.value))
+                self.mostrar_grafica(p_der1, fig)
+
+        p_izq1.controls.append(ft.Button("Resolver y Graficar Cromática", on_click=calc_cromatico, bgcolor="#8d6e1f", color=ft.Colors.WHITE))
+        content.extend([card1, self.crear_panel_formula("σ = |D(λ) · L · σ_λ|", "D(λ) = Coeficiente Cromático | L = Longitud | σ_λ = Ancho espectral")])
+
+        
+        # 2. DISPERSIÓN INTERMODAL (RETARDO MODAL) ⮀ OMNIDIRECCIONAL
+        
+        card2, p_izq2, p_der2 = self.crear_tarjeta_dividida()
+        p_izq2.controls.append(ft.Text("Dispersión Intermodal (Retardo Modal) ⮀ OMNIDIRECCIONAL", size=16, weight=ft.FontWeight.BOLD))
+
+        r1_im, e_lim = self.crear_fila_input("Longitud (L):", "Ej. 1000", "[m]", "", "L", "Longitud de la fibra")
+        r2_im, e_n1 = self.crear_fila_input("Índice Núcleo (n₁):", "Ej. 1.48", "[Adim]", "", "n₁", "Índice de refracción del núcleo")
+        r3_im, e_del = self.crear_fila_input("Dif. Relativa (Δ):", "Ej. 0.01", "[Decimal]", "", "Δ", "Diferencia de índice")
+        r4_im, e_dt = self.crear_fila_input("Retardo (ΔT):", "Ej. 5e-8", "[s]", "", "ΔT", "Diferencia temporal entre modos")
+        p_izq2.controls.extend([r1_im, r2_im, r3_im, r4_im])
+
+        def resolver_intermodal(e):
+            ents = {"l": e_lim, "n1": e_n1, "del": e_del, "dt": e_dt}
+            funcs = {
+                "dt": lambda ll: MotorModuloA.retardo_modal_escalonado(ll["l"], ll["n1"], ll["del"]),
+                "l": lambda ll: MotorModuloA.retardo_inverso_l(ll["dt"], ll["n1"], ll["del"]),
+                "n1": lambda ll: MotorModuloA.retardo_inverso_n1(ll["dt"], ll["l"], ll["del"]),
+                "del": lambda ll: MotorModuloA.retardo_inverso_delta(ll["dt"], ll["l"], ll["n1"])
+            }
+            inc, res = self._resolver_omni(ents, funcs)
+            if inc == "dt":
+                e_dt.value = f"{res:.4e}"  # Muestra en formato científico por ser tiempo pequeño
+                self.page.update()
+
+        p_izq2.controls.append(ft.Button("Resolver Retardo Modal", on_click=resolver_intermodal, bgcolor="#8d6e1f", color=ft.Colors.WHITE))
+        content.extend([card2, self.crear_panel_formula("ΔT ≈ (L · n₁ · Δ) / c", "Ensanchamiento por múltiples caminos en fibra multimodo de índice escalonado")])
+
+        
+        # 3. DISPERSIÓN POR MODO DE POLARIZACIÓN (PMD) ➔ TRADICIONAL
+        
+        card3 = ft.Container(bgcolor="#1e1e1e", padding=20, border_radius=10, margin=15)
+        col3 = ft.Column(controls=[ft.Text("Dispersión de Polarización (PMD) ➔ TRADICIONAL", size=16, weight=ft.FontWeight.BOLD)])
+
+        r1_pmd, e_dpmd = self.crear_fila_input("Coef. PMD (D_PMD):", "Ej. 0.5", "[ps/√km]", "", "D_PMD", "Coeficiente de polarización")
+        r2_pmd, e_lpmd = self.crear_fila_input("Longitud (L):", "Ej. 100.0", "[km]", "", "L", "Distancia del enlace")
+        lbl_pmd = ft.Text("Δτ_PMD = -- ps", size=18, weight=ft.FontWeight.BOLD, color="#d4af37")
+
+        def resolver_pmd(e):
             try:
-                res = MotorModuloA.ensanchamiento_total(float(e_ed.value), float(e_el.value), float(e_esig.value))
-                lbl_ens.value = f"σ = {res:.2f} ps"
-                fig = MotorGrafico.plot_ensanchamiento(res)
-                self.mostrar_grafica(p_der, fig)
+                res = MotorModuloA.dispersion_polarizacion_pmd(float(e_dpmd.value), float(e_lpmd.value))
+                lbl_pmd.value = f"Δτ_PMD = {res:.4f} ps"
+                self.page.update()
                 self.reproducir_exito()
             except Exception as ex: self.mostrar_error(str(ex))
 
-        p_izq.controls.append(ft.Button("Calcular y Graficar", on_click=calc_ensanchamiento, bgcolor="#8d6e1f", color=ft.Colors.WHITE))
-        content.extend([card, self.crear_panel_formula("σ = |D(λ) · L · σ_λ|", "D(λ) = Coeficiente Cromático | L = Longitud | σ_λ = Ancho espectral")])
+        col3.controls.extend([r1_pmd, r2_pmd, ft.Container(content=lbl_pmd, padding=10), ft.Button("Calcular PMD", on_click=resolver_pmd, bgcolor="#8d6e1f", color=ft.Colors.WHITE)])
+        card3.content = col3
+        content.extend([card3, self.crear_panel_formula("Δτ_PMD = D_PMD · √L", "Ensanchamiento debido a la birrefringencia del núcleo")])
+
+        # Se envían todas las tarjetas al main content
         self.set_main_content("⏱️ Dispersión y Retardos", "#d4af37", content)
 
 
