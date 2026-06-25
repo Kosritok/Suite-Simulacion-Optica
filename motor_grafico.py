@@ -1,6 +1,14 @@
+#Las funciones de esta sección que incluyen todo el módulo de motor gráfico fueron investigadas por
+#Issac Gómez
+#La programación del módulo fue hecha por Issac Gómez y Óscar Rosas
+#Posteriormente refinada e integrada por Óscar Rosas
+#En términos generales todo lo que se encuentra son funciones visuales para las gráficas
+#No se encuentran en este módulo fórmulas, solo funciones de programación de
+#La librería de Python llamada Matplotlib
+
 import numpy as np
 import matplotlib
-matplotlib.use('agg')  # <--- SOLUCIÓN AL ERROR (Renderizado en memoria)
+matplotlib.use('agg') 
 import matplotlib.pyplot as plt
 
 class MotorGrafico:

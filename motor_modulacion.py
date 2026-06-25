@@ -1,13 +1,23 @@
+#Las fórmulas de esta sección que incluyen todo el módulo de motor de modulación fueron extraídas por
+#ASK: Margarita y Patricia
+#PSK: Germán
+#FSK: Óscar Rosas
+#DPSK: Emilio
+#La programación del módulo fue hecha por Óscar Rosas ppara el caso de ASK y FSK
+#La programación base de la sección de PSK fue hecha por Germán, en cuanto a refinarla y terminarla de integrar por Óscar Rosas
+#La programación base de la sección de DPSK fue hecha por Emilio, en cuanto a refinarla y terminarla de integrar por Óscar Rosas
+
+
 import numpy as np
 import matplotlib
-matplotlib.use('agg') # <--- SOLUCIÓN AL ERROR (Renderizado en memoria)
+matplotlib.use('agg')
 import matplotlib.pyplot as plt
 
 class MotorModulacion:
     @staticmethod
     def configurar_subplots(titulo):
         fig, axs = plt.subplots(3, 1, figsize=(4.5, 4.5), facecolor='#2B2B2B', constrained_layout=True)
-        
+        #Definición de gráficos
         fig.suptitle(titulo, color='#d4af37', fontsize=11, fontweight='bold')
         for i, ax in enumerate(axs):
             ax.set_facecolor('#212121')
@@ -22,6 +32,7 @@ class MotorModulacion:
                 ax.set_xlabel("Tiempo (s)", color='gray', fontsize=8)
                 
         return fig, axs
+    #Estilo de los gráficos
 
     @staticmethod
     def plot_ask_digital(A, f_m_ghz, bits_str):
@@ -52,6 +63,7 @@ class MotorModulacion:
             else:
                 senial_modulada.extend(np.zeros_like(t_bit))
                 
+        #Todas las lineas de código arriba de este comentario son la lógica de programación de ASK
         fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(6.5, 6), sharex=True, gridspec_kw={'height_ratios': [1, 1.2, 2]})
         
         ax1.plot(t_total, senial_mensaje, color="#64b5f6", linewidth=2)
@@ -83,6 +95,7 @@ class MotorModulacion:
         fig.patch.set_alpha(0.0)
         plt.tight_layout()
         return fig
+    #Las líneas de programación de arriba son para los plots de ASK
 
     @staticmethod
     def plot_psk_digital(A, f_m_ghz, bits_str):
@@ -112,6 +125,7 @@ class MotorModulacion:
             else:
                 senial_modulada.extend(A * np.cos(2 * np.pi * fc_vis * t_bit + np.pi))
                 
+        #Todas las lineas de código arriba de este comentario son la lógica de programación de PSK
         fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(6.5, 6), sharex=True, gridspec_kw={'height_ratios': [1, 1.2, 2]})
         
         ax1.plot(t_total, senial_mensaje, color="#64b5f6", linewidth=2)
@@ -144,6 +158,8 @@ class MotorModulacion:
         plt.tight_layout()
         return fig
     
+    #Las líneas de programación de arriba son para los plots de PSK
+    
     @staticmethod
     def plot_fsk(Es: float, delta_f: float, fc: float, fm: float):
         fig, axs = MotorModulacion.configurar_subplots("Modulación FSK (Frequency Shift Keying)")
@@ -164,6 +180,8 @@ class MotorModulacion:
         
         return fig
     
+    #Las líneas de programación de arriba son para los plots de FSK
+    
     @staticmethod
     def plot_fsk_digital(A, f_m_ghz, bits_str):
         import numpy as np
@@ -174,16 +192,14 @@ class MotorModulacion:
         if not bits:
             raise ValueError("Secuencia vacía")
         
-        # ==========================================
         # LÓGICA DINÁMICA DE VISUALIZACIÓN
         # A mayor tasa de bits (f_m), la ventana de tiempo es más corta,
         # por lo que caben menos ciclos de la portadora por cada bit.
         # Tomamos 500 GHz como base para mostrar ~6 ciclos.
-        # ==========================================
         fc_vis = (500.0 / f_m_ghz) * 6.0
         
         # Limitamos los ciclos entre 1 y 30 para que la gráfica de Matplotlib
-        # no se vuelva una plasta negra si metes valores extremos.
+        # no se vuelva una gráfica saturada negra si metes valores extremos.
         fc_vis = max(min(fc_vis, 30.0), 1.0)
         
         f1 = fc_vis * 1.5  # Frecuencia rápida para el bit '1' (+50%)
@@ -211,6 +227,7 @@ class MotorModulacion:
             else:
                 senial_modulada.extend(A * np.cos(2 * np.pi * f2 * t_bit))
                 
+        #Todas las lineas de código arriba de este comentario son la lógica de programación de FSK
         # Crear figura con 3 subplots apilados
         fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(6.5, 6), sharex=True, gridspec_kw={'height_ratios': [1, 1.2, 2]})
         
@@ -251,6 +268,8 @@ class MotorModulacion:
         plt.tight_layout()
         
         return fig
+    
+    #Las líneas de programación de arriba son para los plots de FSK
 
     @staticmethod
     def plot_dpsk_digital(A, f_m_ghz, bits_str):
@@ -289,6 +308,8 @@ class MotorModulacion:
         senal_retrasada = np.pad(senal_modulada, (muestras_bit, 0), mode='constant')[:len(senal_modulada)]
         producto_rx = senal_modulada * senal_retrasada
         
+#Todas las lineas de código arriba de este comentario son la lógica de programación de DPSK
+
         # --- Generación de Gráficas (4 Paneles) ---
         fig, axs = plt.subplots(4, 1, figsize=(6.5, 7.5), sharex=True, gridspec_kw={'height_ratios': [1, 1, 2, 1.5]})
         
@@ -333,3 +354,5 @@ class MotorModulacion:
         fig.patch.set_alpha(0.0)
         plt.tight_layout()
         return fig
+    
+    #Las líneas de programación de arriba son para los plots de DPSK

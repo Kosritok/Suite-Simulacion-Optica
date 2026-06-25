@@ -1,3 +1,12 @@
+#Este código es el que le da vida a todos los motores de cada una de las secciones
+#Es aquel que permite tener todas las funciones accesibles
+#Que el usuario de la app pueda ingresar parámetros y que estos interactuen con las funciones de los motores
+#Controla todo lo visual, todos los cálculos, todo el despliegue de aplicación
+#Este código fue totalmente programado por Óscar Rosas
+#En general, para su fácil entendimiento y localización de cada parte
+#Las funciones están nombradas de manera referente a lo que hace cada una
+#Autor: Óscar Rosas
+
 import flet as ft
 import io
 import base64
@@ -66,9 +75,8 @@ class OpticaApp:
         dlg.open = True
         self.page.update()
 
-    # ==========================================
     # HERRAMIENTAS DE CONSTRUCCIÓN VISUAL
-    # ==========================================
+
     def crear_fila_input(self, label_text, placeholder, unit_text, rango_text="", help_title="Info", help_desc="Detalle"):
         ent = ft.TextField(hint_text=placeholder, width=150, text_size=14, height=45, content_padding=10, border_color="#555555")
         row = ft.Row(
@@ -153,9 +161,8 @@ class OpticaApp:
             self.mostrar_error(f"Error matemático: {str(e)}")
         return None, None
 
-    # ==========================================
     # ACORDEÓN Y ESTRUCTURA PRINCIPAL
-    # ==========================================
+    
     def crear_btn_menu(self, texto, icono_str, color_hover, al_hacer_click):
         def al_pasar_mouse(e):
             e.control.bgcolor = color_hover if e.data == "true" else None
@@ -254,9 +261,8 @@ class OpticaApp:
         ])
         self.page.update()
 
-    # ==========================================
     # VISTAS DEL MOTOR DE ATENUACIÓN
-    # ==========================================
+    
     def v_atenuacion(self):
         content = []
         card, p_izq, p_der = self.crear_tarjeta_dividida()
@@ -412,9 +418,9 @@ class OpticaApp:
         content.extend([card, self.crear_panel_formula("D(λ) = (S₀ / 4) · [ λ - (λ₀⁴ / λ³) ]", "Dispersión G.652")])
         self.set_main_content("📊 Modelos Estándar", ft.Colors.WHITE, content)
 
-    # ==========================================
+    
     # VISTAS DEL MOTOR DE DISPERSIÓN 
-    # ==========================================
+    
     def v_geom(self):
         content = []
         card1 = ft.Container(bgcolor="#1e1e1e", padding=20, border_radius=10, margin=15)
@@ -516,9 +522,9 @@ class OpticaApp:
         self.set_main_content("⏱️ Dispersión y Retardos", "#d4af37", content)
 
 
-    # ==========================================
+    
     # VISTAS DEL MOTOR MATEMÁTICO (MÓDULO B)
-    # ==========================================
+    
     def v_modb_freq(self):
         content = []
         card, p_izq, p_der = self.crear_tarjeta_dividida()
@@ -618,9 +624,8 @@ class OpticaApp:
         self.set_main_content("⭕ Diámetro de Campo Modal (MFD)", "#66bb6a", content)
 
 
-    # ==========================================
     # VISTAS DEL MOTOR DE MODULACIÓN
-    # ==========================================
+    
     def v_ask(self):
         content = []
         card, p_izq, p_der = self.crear_tarjeta_dividida()
