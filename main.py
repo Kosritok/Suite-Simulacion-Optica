@@ -734,7 +734,7 @@ class OpticaApp:
 
         r1, e_es = self.crear_fila_input("Amplitud (A):", "Ej. 1.0", "[V/m]", "", "Amplitud", "Intensidad del láser cuando está encendido.")
         r2, e_lam = self.crear_fila_input("Long. Onda (λ):", "Ej. 1550.0", "[nm]", "", "Longitud de onda", "Define la frecuencia portadora en THz.")
-        r3, e_fm = self.crear_fila_input("Tasa Bits (fₘ):", "Ej. 500.0", "[GHz]", "", "Tasa de bits", "Velocidad de transmisión.")
+        r3, e_fm = self.crear_fila_input("Tasa Bits (Rb):", "Ej. 500.0", "[Gbps]", "", "Tasa de bits", "Velocidad de transmisión.")
         r4, e_bits = self.crear_fila_input("Secuencia Bits:", "Ej. 10110", "[0s y 1s]", "", "Bits", "Mensaje digital.")
         
         lbl_fc = ft.Text("f_c = -- THz", size=16, weight=ft.FontWeight.BOLD, color="#ab47bc")

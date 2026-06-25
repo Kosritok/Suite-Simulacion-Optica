@@ -292,14 +292,17 @@ class MotorModulacion:
         # 1. Señal Original m(t)
         mensaje_original = np.repeat(bits, muestras_bit)
         
-        # 2. Codificador Diferencial (Lógica XOR del archivo fuente)
-        m_n = [0] # Bit de referencia inicial
+        # --- Lógica de Codificación Diferencial ---
+        bits_diferenciales = []
+        estado_anterior = 1  # Empezamos en alto
         for bit in bits:
-            nuevo_estado = bit ^ m_n[-1]
-            m_n.append(nuevo_estado)
+            nuevo_estado = estado_anterior ^ bit  # Operación XOR
+            bits_diferenciales.append(nuevo_estado)
+            estado_anterior = nuevo_estado
+        # ------------------------------------------
             
         # Repetimos los bits codificados (excluyendo el de referencia para encajar en el tiempo)
-        datos_codificados = np.repeat(m_n[1:], muestras_bit)
+        datos_codificados = np.repeat(bits_diferenciales, muestras_bit)
         
         # 3. Señal Modulada DPSK
         fase = datos_codificados * np.pi
