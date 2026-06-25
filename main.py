@@ -595,15 +595,36 @@ class OpticaApp:
         card, p_izq, p_der = self.crear_tarjeta_dividida()
         p_izq.controls.append(ft.Text("Frecuencia Normalizada (V) ⮀ OMNIDIRECCIONAL", size=16, weight=ft.FontWeight.BOLD))
         
+        # Entradas numéricas
         r1, e_a = self.crear_fila_input("Radio Núcleo (a):", "Ej. 25.0", "[µm]", "", "a", "Radio Esférico Interno")
         r2, e_lam = self.crear_fila_input("Longitud Onda (λ):", "Ej. 1300.0", "[nm]", "", "λ", "Longitud de Onda")
-        r3, e_na = self.crear_fila_input("Apertura Num. (AN):", "Ej. 0.22", "[Adim]", "", "AN", "Apertura Numérica")
-        r4, e_v = self.crear_fila_input("Frecuencia V:", "Ej. 2.4", "[Adim]", "", "V", "Monomodo < 2.4048")
+        r3, e_an = self.crear_fila_input("Apertura Num. (AN):", "Ej. 0.22", "[Adim]", "", "AN", "Apertura Numérica")
+        r4, e_v = self.crear_fila_input("Frecuencia V:", "Ej. 2.4", "[Adim]", "", "V", "Monomodo ≤ 2.405")
+        
+        # NUEVO: Selector de Tipo de Fibra (Dropdown)
+        dd_perfil = ft.Dropdown(
+            width=150,
+            options=[
+                ft.dropdown.Option("Escalonado"),
+                ft.dropdown.Option("Gradual")
+            ],
+            value="Escalonado", # Valor por defecto
+            text_size=14, height=45, content_padding=10, border_color="#555555"
+        )
+        row_perfil = ft.Row(
+            controls=[
+                ft.Container(content=ft.Text("Perfil de Índice:", size=14), width=180, alignment=ft.Alignment.CENTER_RIGHT),
+                dd_perfil,
+                ft.Container(content=ft.Text("  [Geometría]", size=13, color=ft.Colors.GREY), expand=True),
+                ft.IconButton(icon=ft.Icons.HELP_OUTLINE, icon_size=20, on_click=lambda e: self.abrir_ayuda("Perfil de Índice", "Escalonado (Step-Index) para M = V²/2. Gradual (Graded-Index) asumiendo perfil parabólico para M = V²/4."))
+            ], spacing=5
+        )
+
         lbl_modos = ft.Text("Modos Guiados: --", size=18, weight=ft.FontWeight.BOLD, color="#66bb6a")
-        p_izq.controls.extend([r1, r2, r3, r4, ft.Container(content=lbl_modos, padding=10)])
+        p_izq.controls.extend([r1, r2, r3, r4, row_perfil, ft.Container(content=lbl_modos, padding=10)])
         
         def resolver_v_modos(e):
-            ents = {"a": e_a, "lam": e_lam, "an": e_na, "v": e_v}
+            ents = {"a": e_a, "lam": e_lam, "an": e_an, "v": e_v}
             funcs = {
                 "v": lambda ll: MotorModuloB.frecuencia_normalizada_v(ll["a"], ll["lam"], ll["an"]),
                 "a": lambda ll: MotorModuloB.v_inverso_a(ll["v"], ll["lam"], ll["an"]),
@@ -613,13 +634,28 @@ class OpticaApp:
             inc, res = self._resolver_omni(ents, funcs)
             if inc:
                 v_final = float(e_v.value)
-                m_esc = MotorModuloB.modos_step_index(v_final)
-                lbl_modos.value = f"Modos Escalonados: {int(m_esc)}"
-                fig = MotorGrafico.plot_numero_v(float(e_a.value), float(e_lam.value)/1000.0, float(e_na.value))
+                
+                # NUEVO: Lógica de validación de Modos 
+                if v_final <= 2.405:
+                    # Condición Monomodo absoluta
+                    lbl_modos.value = "Monomodo ➔ Modos Guiados: 1"
+                    lbl_modos.color = "#42a5f5" # Color azul para destacar Monomodo
+                else:
+                    # Condición Multimodo basada en la geometría
+                    if dd_perfil.value == "Escalonado":
+                        m = (v_final ** 2) / 2
+                        lbl_modos.value = f"Multimodo (Escalonado) ➔ Modos: {int(m)}"
+                        lbl_modos.color = "#66bb6a" # Verde original
+                    else:
+                        m = (v_final ** 2) / 4
+                        lbl_modos.value = f"Multimodo (Gradual) ➔ Modos: {int(m)}"
+                        lbl_modos.color = "#ffa726" # Naranja para diferenciar
+
+                fig = MotorGrafico.plot_numero_v(float(e_a.value), float(e_lam.value)/1000.0, float(e_an.value))
                 self.mostrar_grafica(p_der, fig)
 
         p_izq.controls.append(ft.Button("Resolver y Graficar V", on_click=resolver_v_modos, bgcolor="#12402d", color=ft.Colors.WHITE))
-        content.extend([card, self.crear_panel_formula("V = (2πa / λ) · AN", "Dictamen matemático Monomodo / Multimodo.")])
+        content.extend([card, self.crear_panel_formula("V = (2πa / λ) · AN", "Validación estricta: Si V ≤ 2.405 el sistema es puramente Monomodo (1 modo).")])
         self.set_main_content("🔢 Frecuencia Normalizada y Modos", "#66bb6a", content)
 
     def v_modb_corte(self):
@@ -749,8 +785,9 @@ class OpticaApp:
 
         p_izq.controls.append(ft.Button("Generar Gráficas BPSK", on_click=graficar_psk, bgcolor="#38006b", color=ft.Colors.WHITE))
         
-        formula = "s(t) = A · cos(2π·f_c·t)  para '1'   |   s(t) = A · cos(2π·f_c·t + π)  para '0'"
-        content.extend([card, self.crear_panel_formula(formula, "Desplazamiento de fase de 180° (π radianes) en transiciones.")])
+        # Actualización de la fórmula para reflejar la inversión de polaridad
+        formula = "s(t) = A · cos(2π·f_c·t)  para '1'   |   s(t) = -A · cos(2π·f_c·t)  para '0'"
+        content.extend([card, self.crear_panel_formula(formula, "Codificación Polar: La inversión de signo equivale matemáticamente a un desfase suave de 180° (π).")])
         self.set_main_content("📉 Modulación BPSK (Binaria de Fase)", "#ab47bc", content)
 
     def v_fsk(self):

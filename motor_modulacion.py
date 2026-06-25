@@ -116,14 +116,16 @@ class MotorModulacion:
             t_total.extend(t_actual)
             
             senial_mensaje.extend(np.ones_like(t_bit) * bit)
-            onda_portadora = A * np.cos(2 * np.pi * fc_vis * t_bit)
+            
+            # EL CAMBIO ESTÁ AQUÍ: Usamos t_actual en vez de t_bit
+            onda_portadora = A * np.cos(2 * np.pi * fc_vis * t_actual)
             senial_portadora.extend(onda_portadora)
             
-            # Señal modulada BPSK: Desfase de 180 grados (pi) si el bit es 0
+            # Señal modulada BPSK: Inversión de polaridad (NRZ) si el bit es 0
             if bit == 1:
                 senial_modulada.extend(onda_portadora)
             else:
-                senial_modulada.extend(A * np.cos(2 * np.pi * fc_vis * t_bit + np.pi))
+                senial_modulada.extend(-onda_portadora)
                 
         #Todas las lineas de código arriba de este comentario son la lógica de programación de PSK
         fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(6.5, 6), sharex=True, gridspec_kw={'height_ratios': [1, 1.2, 2]})
